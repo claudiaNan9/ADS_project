@@ -28,8 +28,8 @@ Legge i file `.bz2` e ne estrae le informazioni.
 
 ### 2. `grafo` – Costruzione del grafo
 Costruisce il grafo non orientato pesato G = (V, E) a partire dai cammini BGP.
-- Struttura dati: liste di adiacenza implementate come vector per rappresentare il grafo
-- Funzioni di gestione del grafo 
+- Struttura dati: liste di adiacenza implementate come vector per rappresentare il grafo 
+- Funzioni di gestione del grafo e degli archi
 
 ### 3. `minimum spanning tree` – Costruzione del Minimum Spanning Tree
 Implementa l'algoritmo di Kruskal per costruire il MST del grafo.
@@ -65,3 +65,8 @@ progetto-as/
 ```
 
 Il primo step è capire come sono fatti i file e ispezionare i dati, questi passaggi di verifica verranno fatti in appositi notebooks. In notebooks/inspect_data.ipynb apriamo i file per vedere come sono fatti dentro e stampare qualcosa. 
+
+Il risultato di questa fase di ispezione è lo script: step1_parser_cammini.py, che estrae dal file all paths i cammini BGP. Nello specifico, rimuove le parti inutili della stringa del tipo: routeviews/isc|5 4436|6762|21826 200.82.128.0/24 i 198.32.176.13 e restituisce solo la lista di nodi corrispondente. L'output dello script è un file pkl dove vengono salvati tutti i cammini (lista di liste).
+
+Lo step successivo sarà estrarre da queste liste gli archi e le loro frequenze per la costruzione del grafo. Una possibile successione di passaggi potrebbe essere:
+- estrazione degli archi e conteggio delle frequenze (struttura defaultdict di python): questa operazione dovrà gestire i self loop e la frequenza di archi uguali (1,2 e 2,1 ad esempio). Una soluzione semplice è stata testata in inspect_data, vediamo come adattarla alla fase successiva di costruzione del grafo.
