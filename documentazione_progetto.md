@@ -64,9 +64,28 @@ progetto-as/
 └── documentazione_progetto.md       # documento di progettazione delle varie fasi e delle scelte di implementazione
 ```
 
+## Procedimento
+
 Il primo step è capire come sono fatti i file e ispezionare i dati, questi passaggi di verifica verranno fatti in appositi notebooks. In notebooks/inspect_data.ipynb apriamo i file per vedere come sono fatti dentro e stampare qualcosa. 
 
 Il risultato di questa fase di ispezione è lo script: step1_parser_cammini.py, che estrae dal file all paths i cammini BGP. Nello specifico, rimuove le parti inutili della stringa del tipo: routeviews/isc|5 4436|6762|21826 200.82.128.0/24 i 198.32.176.13 e restituisce solo la lista di nodi corrispondente. L'output dello script è un file pkl dove vengono salvati tutti i cammini (lista di liste).
 
 Lo step successivo sarà estrarre da queste liste gli archi e le loro frequenze per la costruzione del grafo. Una possibile successione di passaggi potrebbe essere:
 - estrazione degli archi e conteggio delle frequenze (struttura defaultdict di python): questa operazione dovrà gestire i self loop e la frequenza di archi uguali (1,2 e 2,1 ad esempio). Una soluzione semplice è stata testata in inspect_data, vediamo come adattarla alla fase successiva di costruzione del grafo.
+
+Inspect_data riflette il flusso seguito a partire dai cammini estratti. Le frequenze sono state estrapolate e salvate come frequenze = defaultdict(int) 
+(la differenza tra dict e defaultdict è che in defaultdict si può definire un caso di default e il tipo che prendono i valori, in questo caso int della frequenza. Se si fa frequenze[0] non dà key error perchè la chiave non esiste ma la crea di default con chiave 0 e valore 0). 
+
+Poi ho provato da frequenze a costruire il grafo considerandolo come un dizionario di dizionari, dove la chiave è il nodo e il valore è un dizionario contenente i vicini e il peso (frequenza). Il risultato è del tipo: {4436: {6762: 1, 701: 1, 2914: 1} ..}. 
+
+Partendo da questi tentativi possiamo abbozzare una classe Graph (fatta nel notebook ma da rifinire per lo script), con le seguenti funzioni generali:
+- inizializza la struttura dati come dizionario di dizionari (liste di adiacenza)
+- inserimento/rimozione di: nodi e archi 
+- controlli vari (ha un nodo/arco)
+- legge i nodi/archi e li restituisce
+- converte gli ID AS in interi (sono stringhe). Decido di non trasformali in interi consecutivi perchè in Python stiamo usando i dizionari che non hanno problemi con valori sparsi e la differenza in efficienza non dovrebbe esserci (aveva senso trasformarli in c++ credo usando vector per accedere alle posizioni?)
+
+poi ci sono le funzioni dedicate al fatto che stiamo leggendo direttamente i percorsi BGP quindi creiamo il grafo sulla base di quello. 
+- aggiungere i percorsi 
+- aggiornare la frequenza 
+- trovare la componente connessa più grande (tramite DFS)
