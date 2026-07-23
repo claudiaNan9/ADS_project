@@ -89,3 +89,77 @@ poi ci sono le funzioni dedicate al fatto che stiamo leggendo direttamente i per
 - aggiungere i percorsi 
 - aggiornare la frequenza 
 - trovare la componente connessa più grande (tramite DFS)
+
+Questa fase di esplorazione ha portato alla costruzione della classe Graph implementata nello script step2_costruzione_grafo.py
+
+## Modulo: Graph (costruzione_grafo.py) (prima bozza)
+
+Classe che permette di creare un oggetto grafo non orientato e pesato, che implementa funzionalità di gestione generale e di costruzione attraverso la lettura di cammini BGP. Di seguito le specifiche.
+
+### input:
+sequenza di cammini BGP letti dal file cammini.pkl, che è stato generato dallo script dello step1. In realtà lo script di prova (script2.py) prevede anche la possibilità di leggere i cammini direttamente dal file bz2, ma una analisi di test ha prodotto tempi leggermente ridotti per il file pkl (leggere il file serializzato è più veloce di fare il parsing del bz2), la differenza comunque è di pochi secondi. 
+(TO DO: decidere se mantenere il file di prova che permette di usare entrambe le possibilità o no).
+
+### output:
+Lo script restituisce due file: 
+- grafo.pkl: rappresenta l'intero grafo. 
+- grafo_largest_component.pkl: rappresenta la componente connessa più grande del grafo.
+
+### strutture dati: 
+Il grafo viene rappresentato come un dizionario di dizionari (dict) dove:
+- la chiave del dizionario esterno è un nodo AS, il dizionario interno é la sua lista di adiacenza pesata. Il risultato è del tipo: {4436: {6762: 1, 701: 1, 2914: 1} ..}.
+
+## Modulo: Graph (costruzione_grafo.py) (prima bozza)
+
+Classe che permette di creare un oggetto grafo non orientato e pesato, che implementa funzionalità di gestione generale e di costruzione attraverso la lettura di cammini BGP. Di seguito le specifiche.
+
+### Input:
+Sequenza di cammini BGP letti dal file cammini.pkl, che è stato generato dallo script dello step1. In realtà lo script di prova (script2.py) prevede anche la possibilità di leggere i cammini direttamente dal file bz2, ma una analisi di test ha prodotto tempi leggermente ridotti per il file pkl.
+| Approccio | Tempo caricamento | Tempo costruzione grafo | Tempo largest component | Totale |
+|---|---|---|---|---|
+| bz2 | — | 7.86s | 0.08s | 7.94s |
+| pkl | 0.61s | 4.32s | 0.08s | 5.01s |
+Il pkl risulta più veloce perché il parsing del testo è già stato effettuato nello step1 e il file serializzato può essere deserializzato direttamente senza ulteriori elaborazioni.
+(TO DO: decidere se mantenere il file di prova che permette di usare entrambe le possibilità o no).
+
+### Output:
+Lo script restituisce due file: 
+- grafo.pkl: rappresenta l'intero grafo. 
+- grafo_largest_component.pkl: rappresenta la componente connessa più grande del grafo.
+
+### Strutture dati: 
+Il grafo viene rappresentato come un dizionario di dizionari (dict) dove la chiave del dizionario esterno è un nodo AS e il dizionario interno è la sua lista di adiacenza pesata. Il risultato è del tipo: `{4436: {6762: 1, 701: 1, 2914: 1}, ...}`.
+
+Gli identificatori AS sono convertiti da stringhe a interi tramite `_convert_node` — si è scelto di non mapparli in interi consecutivi perché in Python i dizionari non hanno problemi con valori sparsi, a differenza del C++ dove si usano i `vector` che richiedono indici consecutivi.
+
+### Funzioni generali sul grafo:
+
+- **`_convert_node(node)`**: converte l'identificatore AS da stringa a intero.
+- **`add_node(node)`**: aggiunge un nodo con lista di adiacenza vuota. Solleva `ValueError` se esiste già. 
+- **`remove_node(node)`**: rimuove il nodo e tutti i suoi archi dai vicini.
+- **`add_edge(from_node, to_node, weight=None)`**: aggiunge un arco non orientato arbitrario con peso opzionale specificato dall'utente. I self-loop vengono ignorati. 
+- **`remove_edge(from_node, to_node)`**: rimuove un arco in entrambe le direzioni. Solleva `ValueError` se il nodo o l'arco non esistono. 
+- **`update_frequency(from_node, to_node)`**: aggiunge i nodi se non esistono, poi incrementa il peso dell'arco di 1 in entrambe le direzioni. Gestisce i self-loop.
+- **`get_neighbors(node)`**: restituisce il dizionario dei vicini di un nodo con i relativi pesi. 
+- **`has_node(node)`**: verifica se un nodo esiste. 
+- **`has_edge(from_node, to_node)`**: verifica se un arco esiste. 
+- **`get_nodes()`**: restituisce la lista di tutti i nodi. 
+- **`get_edges()`**: restituisce la lista di tutti gli archi senza duplicati (u,v) e (v,u).
+- **`delete_consecutive_duplicates(path)`**: rimuove i nodi ripetuti consecutivamente in un cammino, es. `[10, 10, 20]` → `[10, 20]`. 
+
+### Funzioni dedicate alla costruzione del grafo dai cammini BGP:
+
+- **`add_bgp_path(path)`**: converte gli AS in interi, elimina i duplicati consecutivi, poi per ogni coppia consecutiva chiama `update_frequency`. Costruisce il grafo dinamicamente. 
+- **`build_from_paths(paths)`**: itera su una lista di cammini già caricati in memoria e chiama `add_bgp_path` per ognuno. 
+- **`build_from_bz2(filepath, max_paths=None)`**: legge il file bz2 riga per riga, fa il parsing e chiama `add_bgp_path` direttamente senza caricare tutto in memoria. 
+- **`load_paths(filepath_bz2, filepath_pkl, max_paths)`**: metodo statico che carica i cammini dal bz2 (con limite opzionale) o dal pkl.
+- **`save_graph(filepath)`**: serializza il grafo in un file pickle. 
+- **`load_graph(filepath)`**: metodo statico che deserializza il grafo da un file pickle.
+
+### Funzioni per la componente connessa:
+
+- **`largest_connected_component()`**: trova la componente connessa più grande tramite DFS iterativa. 
+- **`get_largest_connected_subgraph()`**: restituisce un nuovo oggetto `Graph` contenente solo i nodi e gli archi della componente connessa più grande. Il grafo originale non viene modificato.
+
+
+
