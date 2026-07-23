@@ -96,23 +96,6 @@ Questa fase di esplorazione ha portato alla costruzione della classe Graph imple
 
 Classe che permette di creare un oggetto grafo non orientato e pesato, che implementa funzionalità di gestione generale e di costruzione attraverso la lettura di cammini BGP. Di seguito le specifiche.
 
-### input:
-sequenza di cammini BGP letti dal file cammini.pkl, che è stato generato dallo script dello step1. In realtà lo script di prova (script2.py) prevede anche la possibilità di leggere i cammini direttamente dal file bz2, ma una analisi di test ha prodotto tempi leggermente ridotti per il file pkl (leggere il file serializzato è più veloce di fare il parsing del bz2), la differenza comunque è di pochi secondi. 
-(TO DO: decidere se mantenere il file di prova che permette di usare entrambe le possibilità o no).
-
-### output:
-Lo script restituisce due file: 
-- grafo.pkl: rappresenta l'intero grafo. 
-- grafo_largest_component.pkl: rappresenta la componente connessa più grande del grafo.
-
-### strutture dati: 
-Il grafo viene rappresentato come un dizionario di dizionari (dict) dove:
-- la chiave del dizionario esterno è un nodo AS, il dizionario interno é la sua lista di adiacenza pesata. Il risultato è del tipo: {4436: {6762: 1, 701: 1, 2914: 1} ..}.
-
-## Modulo: Graph (costruzione_grafo.py) (prima bozza)
-
-Classe che permette di creare un oggetto grafo non orientato e pesato, che implementa funzionalità di gestione generale e di costruzione attraverso la lettura di cammini BGP. Di seguito le specifiche.
-
 ### Input:
 Sequenza di cammini BGP letti dal file cammini.pkl, che è stato generato dallo script dello step1. In realtà lo script di prova (script2.py) prevede anche la possibilità di leggere i cammini direttamente dal file bz2, ma una analisi di test ha prodotto tempi leggermente ridotti per il file pkl.
 | Approccio | Tempo caricamento | Tempo costruzione grafo | Tempo largest component | Totale |
