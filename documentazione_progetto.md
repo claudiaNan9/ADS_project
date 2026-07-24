@@ -144,5 +144,20 @@ Gli identificatori AS sono convertiti da stringhe a interi tramite `_convert_nod
 - **`largest_connected_component()`**: trova la componente connessa più grande tramite DFS iterativa. 
 - **`get_largest_connected_subgraph()`**: restituisce un nuovo oggetto `Graph` contenente solo i nodi e gli archi della componente connessa più grande. Il grafo originale non viene modificato.
 
+## Step 3: ricerca cammini minimax
+### Idea generale
+L'obiettivo é trovare il costo del cammino minimax ottimo dati due nodi u e v. Quindi dobbiamo trovare il percorso che costa meno per andare da u a v, dove il costo è definito come la frequenza massima di un arco lungo quel percorso. dobbiamo minimizzare questo costo.
 
+L'idea è quella di trovare il Minimum Spanning Tree dal punto A al punto B, che mi garantisce di trovare sempre il cammino ottimo, con costo minore. 
+Usiamo l'algoritmo di Kruskal e non quello di Prim perchè il grafo sembra sparso (ad esempio sul testo che abbiamo fatto: nodi: 37020 e archi: 65910) quindi dovrebbe essere più efficiente.
+
+Gli step da fare per implementare l'algoritmo sono: 
+
+1. ordina tutti gli archi per peso crescente 
+2. aggiunge un arco alla volta, saltando quelli che creerebbero un ciclo
+3. si ferma quando tutti i nodi sono connessi
+
+Per rilevare efficientemente i cicli, usiamo la struttura Union-Find (detta anche Disjoint Set Union). Se due nodi appartengono allo stesso set allora non li uniamo perchè formebbero un ciclo.
+
+L'MST potrebbe essere salvato come oggetto Graph contenente solo gli archi dell'albero. Per rispondere a una query (u, v) si fa una BFS o DFS sull'MST — il cammino trovato è automaticamente il cammino minimax ottimo, e il suo costo è il massimo peso tra gli archi attraversati.
 
