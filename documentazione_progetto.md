@@ -161,3 +161,25 @@ Per rilevare efficientemente i cicli, usiamo la struttura Union-Find (detta anch
 
 L'MST potrebbe essere salvato come oggetto Graph contenente solo gli archi dell'albero. Per rispondere a una query (u, v) si fa una BFS o DFS sull'MST — il cammino trovato è automaticamente il cammino minimax ottimo, e il suo costo è il massimo peso tra gli archi attraversati.
 
+### Implementazione 
+
+**Union-Find** è implementata come classe separata `UnionFind` in `step3_ricerca_cammini_minimax_v3.py`. Viene inizializzata con n elementi, dove n è il numero di nodi del grafo. Internamente usa due ottimizzazioni:
+
+- **path compression**: quando si cerca la radice di un nodo, tutti i nodi incontrati lungo il percorso vengono collegati direttamente alla radice, rendendo le ricerche 
+  future più veloci
+- **union by rank**: quando si uniscono due insiemi, l'albero più basso viene attaccato a quello più alto, evitando di creare alberi sbilanciati
+
+Nota: Union-Find lavora internamente con indici interi consecutivi 0, 1, 2... — quindi gli AS vengono mappati temporaneamente in indici tramite `node_to_index` solo per questa struttura, senza modificare il grafo.
+
+**Kruskal** è implementato come funzione `kruskal(graph)` che:
+- prende in input un oggetto `Graph` non orientato e connesso
+- ordina gli archi per frequenza crescente con `edges.sort()` — 
+- itera sugli archi e usa `union_find.union()` per decidere se aggiungere l'arco
+- restituisce un oggetto `Graph` contenente solo gli archi dell'MST e il peso totale
+
+**Query minimax** è implementata come funzione `minimax_query_dfs(mst, start, target)` che fa una DFS sull'MST. Ogni elemento dello stack contiene:
+- il nodo corrente
+- il massimo peso incontrato fino a quel punto
+- il cammino seguito
+
+Quando raggiunge il nodo target, restituisce il costo minimax (massimo peso sul cammino) e il cammino completo. 

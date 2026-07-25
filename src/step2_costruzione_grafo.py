@@ -55,7 +55,6 @@ class Graph:
 
     def add_edge(self, from_node, to_node, weight=None):
         
-
         #from_node = self._convert_node(from_node) ##ridondanti, lo fa già add_node
         #to_node = self._convert_node(to_node)
 
