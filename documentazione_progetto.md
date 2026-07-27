@@ -54,7 +54,7 @@ Di seguito viene illustrato il procedimento seguito e l'implementazione corrispo
 
 Il primo step è capire come sono fatti i file e ispezionare i dati. In notebooks/inspect_data.ipynb apriamo i file per vedere come sono fatti dentro e stampare le righe che ci interessa analizzare. Il risultato di questa fase di ispezione è lo script: step1_parser_cammini.py, che estrae dal file all paths i cammini BGP. Nello specifico, rimuove le parti inutili della stringa del tipo: routeviews/isc|5 4436|6762|21826 200.82.128.0/24 i 198.32.176.13 e restituisce solo la lista di nodi corrispondente. L'output dello script è un file pkl dove vengono salvati tutti i cammini (lista di liste).
 
-### Step1_parser_cammini.py
+### step1_parser_cammini.py
 
 #### Input
 
@@ -88,42 +88,39 @@ La struttura principale è una lista di liste, cammini: list[list[str]]. La list
 
 La funzione `leggi_cammini` ha complessità lineare O(N), dove N è la lunghezza totale in caratteri del file di input. Per ogni riga vengono eseguite operazioni di parsing (strip, split, extend) che hanno tutte tempo costante O(1), quindi il tempo totale è proporzionale al numero di righe lette. La complessità spaziale è O(C) dove C è il numero totale di cammini estratti, poiché vengono conservati interamente in memoria. Anche le operazioni di salvataggio e caricamento tramite pickle hanno complessità O(C) poiché dipendono dal numero di cammini serializzati.
 
-## Secondo step: step2_costruzione_grafo.py
+## Secondo step: 
 
-Lo step successivo riguarda la costruzione del grafo a partire dai cammini BGP estratti precedentemente dal file 20110501.all-paths.bz2. In sintesi, l'obiettivo di questo step è quello di estratte dalle liste gli archi e le loro frequenze e a partire da queste costruire dinamicamente il grafo inserendo gli archi e aggiornando le frequenze dei cammini. Anche in questo caso abbiamo fatto qualche test preliminare nel notebook inspect_data.ipynb. 
-Nel notebook, le frequenze sono state estrapolate e salvate come frequenze = defaultdict(int) (la differenza tra dict e defaultdict è che in defaultdict si può definire un caso di default e il tipo che prendono i valori, in questo caso int della frequenza. Se si fa frequenze[0] non dà key error perchè la chiave non esiste ma la crea di default con chiave 0 e valore 0). Poi ho provato a costruire il grafo considerandolo come un dizionario di dizionari, dove la chiave è il nodo e il valore è un dizionario contenente i vicini e il peso (frequenza), cioè la lista di adiacenza. Il risultato è del tipo: {4436: {6762: 1, 701: 1, 2914: 1} ..}. Partendo da queste strutture dati possiamo definire una classe Graph che permetta di inizializzare un oggetto Graph con le strutture dati dedicate e funzionalità per gestire il grafo stesso. Di seguito i dettagli di implementazione. 
+Lo step successivo riguarda la costruzione del grafo a partire dai cammini BGP estratti precedentemente dal file 20110501.all-paths.bz2. In sintesi, l'obiettivo di questo step è quello di estrarre dalle liste gli archi e le loro frequenze e a partire da queste costruire dinamicamente il grafo inserendo gli archi e aggiornando le frequenze dei cammini. Anche in questo caso abbiamo fatto qualche test preliminare nel notebook inspect_data.ipynb. 
+Nel notebook, le frequenze sono state estrapolate e salvate come frequenze = defaultdict(int) (la differenza tra dict e defaultdict è che in defaultdict si può definire un caso di default e il tipo che prendono i valori, in questo caso int della frequenza. Se si fa frequenze[0] non dà key error perchè la chiave non esiste ma la crea di default con chiave 0 e valore 0). Poi ho provato a costruire il grafo considerandolo come un dizionario di dizionari, dove la chiave è il nodo e il valore è un dizionario contenente i vicini e il peso (frequenza), cioè la lista di adiacenza. Il risultato è del tipo: {4436: {6762: 1, 701: 1, 2914: 1} ..}. Partendo da queste strutture dati possiamo definire una classe Graph che permetta di inizializzare un oggetto Graph con le strutture dati dedicate e funzionalità per gestire il grafo stesso.
 
-## Modulo: Graph (costruzione_grafo.py) 
+### step2_costruzione_grafo.py
 
-Classe che permette di creare un oggetto grafo non orientato e pesato, che implementa funzionalità di gestione generale e di costruzione attraverso la lettura di cammini BGP. Di seguito le specifiche.
+Lo script step2_costruzione_grafo.py implementa una classe Graph che permette di inizializzare un oggetto grafo non orientato e pesato, che implementa funzionalità di gestione generale e di costruzione attraverso la lettura di cammini BGP. Di seguito le specifiche.
 
-### Input:
-Sequenza di cammini BGP letti dal file cammini.pkl, che è stato generato dallo script dello step1. In realtà lo script di prova (script2.py) prevede anche la possibilità di leggere i cammini direttamente dal file bz2, ma una analisi di test ha prodotto tempi leggermente ridotti per il file pkl.
-| Approccio | Tempo caricamento | Tempo costruzione grafo | Tempo largest component | Totale |
-|---|---|---|---|---|
-| bz2 | — | 7.86s | 0.08s | 7.94s |
-| pkl | 0.61s | 4.32s | 0.08s | 5.01s |
-Il pkl risulta più veloce perché il parsing del testo è già stato effettuato nello step1 e il file serializzato può essere deserializzato direttamente senza ulteriori elaborazioni.
-(TO DO: decidere se mantenere il file di prova che permette di usare entrambe le possibilità o no).
+#### Input
+L'input per la costruzione del grafo è la sequenza di cammini BGP. Lo script é configurato in modo tale da permettere due modalità: la lettura dal file cammini.pkl, creato nello step precedente, o direttamente dal file bz2. Teoricamente, i file pkl dovrebbe risultare più veloce perché il parsing del testo è già stato effettuato nello step1 e il file serializzato può essere deserializzato direttamente senza ulteriori elaborazioni. L'analisi sperimentale provvederà ad effettuare test di confronto tra le due modalità.
 
-### Output:
+#### Output
 Lo script restituisce due file: 
 - grafo.pkl: rappresenta l'intero grafo. 
 - grafo_largest_component.pkl: rappresenta la componente connessa più grande del grafo.
 
-### Strutture dati: 
-Il grafo viene rappresentato come un dizionario di dizionari (dict) dove la chiave del dizionario esterno è un nodo AS e il dizionario interno è la sua lista di adiacenza pesata. Il risultato è del tipo: `{4436: {6762: 1, 701: 1, 2914: 1}, ...}`.
+#### Strutture dati
+Il grafo viene rappresentato come un dizionario di dizionari (dict) dove la chiave del dizionario esterno è un nodo AS e il dizionario interno è la sua lista di adiacenza pesata. Gli identificatori AS sono convertiti da stringhe a interi tramite la funzione `_convert_node` . Si è scelto di non mapparli in interi consecutivi perché in Python i dizionari non hanno problemi con valori sparsi. (La traccia suggeriva di mapparli in interi consecutivi, ma poteva essere una soluzione indicata principalmente per la struttura vector del C++). Non è stata usata una struttura dati separata per le frequenze degli archi perchè vengono aggiornate direttamente nella lista di adiacenza durante la costruzione del grafo. 
 
-Gli identificatori AS sono convertiti da stringhe a interi tramite `_convert_node` — si è scelto di non mapparli in interi consecutivi perché in Python i dizionari non hanno problemi con valori sparsi, a differenza del C++ dove si usano i `vector` che richiedono indici consecutivi.
+#### Inizializzazione e rappresentazione del grafo
 
-### Funzioni generali sul grafo:
+- **`__init__(directed=False)`**: inizializza un grafo vuoto tramite un dizionario di adiacenza. Il grafo è non orientato di default.
+- **`__repr__()`**: restituisce una rappresentazione testuale leggibile del grafo, mostrando per ogni nodo i vicini e i relativi pesi.
 
-- **`_convert_node(node)`**: converte l'identificatore AS da stringa a intero.
-- **`add_node(node)`**: aggiunge un nodo con lista di adiacenza vuota. Solleva `ValueError` se esiste già. 
+#### Funzioni generali sul grafo
+
+- **`_convert_node(node)`**: converte l’identificatore AS da stringa a intero. 
+- **`add_node(node)`**: aggiunge un nodo con lista di adiacenza vuota. 
 - **`remove_node(node)`**: rimuove il nodo e tutti i suoi archi dai vicini.
 - **`add_edge(from_node, to_node, weight=None)`**: aggiunge un arco non orientato arbitrario con peso opzionale specificato dall'utente. I self-loop vengono ignorati. 
-- **`remove_edge(from_node, to_node)`**: rimuove un arco in entrambe le direzioni. Solleva `ValueError` se il nodo o l'arco non esistono. 
-- **`update_frequency(from_node, to_node)`**: aggiunge i nodi se non esistono, poi incrementa il peso dell'arco di 1 in entrambe le direzioni. Gestisce i self-loop.
+- **`remove_edge(from_node, to_node)`**: rimuove un arco in entrambe le direzioni.
+- **`update_frequency(from_node, to_node)`**: legge la frequenza attuale e la inizializza a zero se non esiste, incrementa il peso dell'arco di 1 in entrambe le direzioni. Gestisce i self-loop.
 - **`get_neighbors(node)`**: restituisce il dizionario dei vicini di un nodo con i relativi pesi. 
 - **`has_node(node)`**: verifica se un nodo esiste. 
 - **`has_edge(from_node, to_node)`**: verifica se un arco esiste. 
@@ -131,21 +128,26 @@ Gli identificatori AS sono convertiti da stringhe a interi tramite `_convert_nod
 - **`get_edges()`**: restituisce la lista di tutti gli archi senza duplicati (u,v) e (v,u).
 - **`delete_consecutive_duplicates(path)`**: rimuove i nodi ripetuti consecutivamente in un cammino, es. `[10, 10, 20]` → `[10, 20]`. 
 
-### Funzioni dedicate alla costruzione del grafo dai cammini BGP:
+#### Funzioni dedicate alla costruzione del grafo dai cammini BGP:
 
 - **`add_bgp_path(path)`**: converte gli AS in interi, elimina i duplicati consecutivi, poi per ogni coppia consecutiva chiama `update_frequency`. Costruisce il grafo dinamicamente. 
-- **`build_from_paths(paths)`**: itera su una lista di cammini già caricati in memoria e chiama `add_bgp_path` per ognuno. 
+- **`build_from_paths(paths)`**: itera su una lista di cammini (già caricati in memoria o letti dal file bz2) e chiama `add_bgp_path` per ognuno. 
 - **`build_from_bz2(filepath, max_paths=None)`**: legge il file bz2 riga per riga, fa il parsing e chiama `add_bgp_path` direttamente senza caricare tutto in memoria. 
 - **`load_paths(filepath_bz2, filepath_pkl, max_paths)`**: metodo statico che carica i cammini dal bz2 (con limite opzionale) o dal pkl.
 - **`save_graph(filepath)`**: serializza il grafo in un file pickle. 
 - **`load_graph(filepath)`**: metodo statico che deserializza il grafo da un file pickle.
 
-### Funzioni per la componente connessa:
+#### Funzioni per la componente connessa
 
-- **`largest_connected_component()`**: trova la componente connessa più grande tramite DFS iterativa. 
+- **`largest_connected_component()`**: trova i nodi che appartengono alla componente connessa più grande tramite DFS iterativa.
 - **`get_largest_connected_subgraph()`**: restituisce un nuovo oggetto `Graph` contenente solo i nodi e gli archi della componente connessa più grande. Il grafo originale non viene modificato.
 
-## Step 3: ricerca cammini minimax
+#### Complessità dei metodi principali
+
+`add_node` ha complessità O(1) perché aggiunge semplicemente una chiave al dizionario. `remove_node` ha complessità O(V) perché deve scorrere tutti i nodi del grafo per rimuovere il nodo eliminato dalle loro liste di adiacenza — nel caso peggiore tocca tutti i V nodi. `add_edge` e `update_frequency` hanno complessità O(1) perché si limitano ad accedere e modificare voci in due dizionari (operazioni a tempo costante). `add_bgp_path` ha complessità O(k) dove k è la lunghezza del cammino — scorre le coppie consecutive e chiama `update_frequency` per ognuna.
+Il totale è quindi proporzionale alla lunghezza del cammino. `build_from_paths` e `build_from_bz2` hanno complessità O(N) dove N è la lunghezza totale di tutti i cammini — chiamano `add_bgp_path` su ogni cammino, e la somma delle lunghezze è N. `largest_connected_component` ha complessità O(V+E) perché implementa una DFS che visita ogni nodo una volta sola O(V) e percorre ogni arco una volta sola O(E).
+
+## Step 3: Ricerca cammino minimax ottimo
 ### Idea generale
 L'obiettivo é trovare il costo del cammino minimax ottimo dati due nodi u e v. Quindi dobbiamo trovare il percorso che costa meno per andare da u a v, dove il costo è definito come la frequenza massima di un arco lungo quel percorso. dobbiamo minimizzare questo costo.
 

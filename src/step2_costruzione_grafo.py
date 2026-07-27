@@ -11,22 +11,28 @@ class Graph:
         self.adjacency_list = {}  # il grafo sarà un dizionario di dizionari: {nodo: {vicino: peso}} (non usiamo defaultdict per avere più controllo)
         self.directed = directed  # default è False, quindi il grafo è non orientato
 
+
+
 ## Converte l'identificatore del nodo AS che è una stringa in un intero.
 
+    # la barretta davanti indica un metodo interno della classe
     def _convert_node(self, node):
 
         try:
             return int(node)
         except (TypeError, ValueError):
             raise ValueError(f"Node {node} is not a valid integer identifier.")
+        
 
 ## Definisce come stampare il grafo in modo leggibile
 
     def __repr__(self):
-        graph_str = ""
-        for node, neighbors in self.adjacency_list.items():
-            graph_str += f" Node {node}: Neighbors and weights {neighbors} \n"
-        return graph_str
+        lines = [
+            f" Node {node}: Neighbors and weights {neighbors} "
+            for node, neighbors in self.adjacency_list.items()
+        ]
+        return "\n".join(lines) + ("\n" if lines else "")
+
 
 ## Aggiunge un nodo al grafo. Se il nodo esiste già, solleva un'eccezione.
 
@@ -37,6 +43,7 @@ class Graph:
             self.adjacency_list[node] = {}  # aggiunge il nodo con un dizionario (lista di adiacenza e pesi) vuoto
         else:
             raise ValueError(f"Node {node} already exists in the graph.")
+
 
 ## Rimuove un nodo dal grafo. Se il nodo non esiste, solleva un'eccezione.
 
@@ -51,12 +58,14 @@ class Graph:
 
         del self.adjacency_list[node]
 
+
+
 ## Aggiunge un arco al grafo. Questo arco può essere arbitrario e non proveniente dai cammini BGP (il suo peso sarà None o specificato arbitrariamente dall'utente)
 
     def add_edge(self, from_node, to_node, weight=None):
         
-        #from_node = self._convert_node(from_node) ##ridondanti, lo fa già add_node
-        #to_node = self._convert_node(to_node)
+        from_node = self._convert_node(from_node) 
+        to_node = self._convert_node(to_node)
 
         if from_node == to_node:  # elimina i self-loop
             return
@@ -72,6 +81,8 @@ class Graph:
 
         if not self.directed: ## aggiunge arco in entrambe le direzioni se è undirected
                 self.adjacency_list[to_node][from_node] = weight
+
+
     
 ## Rimuove un arco dal grafo. Se i nodi A e B non esistono o se l'arco stesso non esiste (magari i nodi sì ma non sono collegati) lancia un errore.
 
@@ -102,6 +113,7 @@ class Graph:
                 del self.adjacency_list[to_node][from_node]
 
 
+
 ## Aggiorna la frequenza degli archi
 
     def update_frequency(self, from_node, to_node):
@@ -114,12 +126,20 @@ class Graph:
         
         ## ho il dubbio che non sia giusto crearli, vediamo
 
+        # if from_node not in self.adjacency_list:
+        #     self.add_node(from_node)
+
+        # if to_node not in self.adjacency_list:
+        #     self.add_node(to_node)
+
+        # update: non li creo perchè vengono già creati in add_bgp_path se non esistono, quindi qui mi limito a mettere un check e ad aggiornare la frequenza 
+
         if from_node not in self.adjacency_list:
-            self.add_node(from_node)
+            raise ValueError(f"Node {from_node} does not exist in the graph.")
 
         if to_node not in self.adjacency_list:
-            self.add_node(to_node)
-
+            raise ValueError(f"Node {to_node} does not exist in the graph.")
+    
         #legge la frequenza attuale con .get(...); se l’arco ancora non esiste restituisce 0 come frequenza iniziale e poi aggiunge 1 
         # assegna il nuovo valore a self.adjacency_list[from_node][to_node].
 
@@ -131,6 +151,10 @@ class Graph:
             self.adjacency_list[to_node][from_node] = (
                 self.adjacency_list[to_node].get(from_node, 0) + 1
             )
+
+
+## Restituisce i vicini 
+
     
     def get_neighbors(self, node):
         node = self._convert_node(node)
@@ -140,9 +164,14 @@ class Graph:
         else:
             raise ValueError(f"Node {node} does not exist in the graph.")
 
+## Controlla se un nodo esiste 
+
     def has_node(self, node):
         node = self._convert_node(node)
         return node in self.adjacency_list
+
+
+## Controlla se un arco esiste 
 
     def has_edge(self, from_node, to_node):
         from_node = self._convert_node(from_node)
@@ -153,8 +182,12 @@ class Graph:
 
         return False
 
+## Restituisce i nodi 
+
     def get_nodes(self):
         return list(self.adjacency_list.keys())
+
+## Restituisce gli archi
 
     def get_edges(self):
         edges = []
@@ -172,14 +205,19 @@ class Graph:
 
         return edges
 
-    def delete_consecutive_duplicates(self, path): # per esempio path = [10, 10, 20] , conserva solo il primo 10 e 20
+## Elimina i duplicati consecutivi nei cammini BGP. Per esempio path = [10, 10, 20] , conserva solo il primo 10 e 20
+
+    def delete_consecutive_duplicates(self, path): 
         return [
             path[i]
             for i in range(len(path))
             if i == 0 or path[i] != path[i - 1]
         ]
 
+## Aggiunge gli archi dai cammini BGP e aggiorna la frequenza
+
     def add_bgp_path(self, path):
+
         # converte tutti gli identificatori AS in interi
         path = [self._convert_node(node) for node in path]
 
@@ -192,14 +230,18 @@ class Graph:
             if u == v:  # elimina i self-loop
                 continue
 
+            # se non esistono li crea 
             if not self.has_node(u):
                 self.add_node(u)
 
             if not self.has_node(v):
                 self.add_node(v)
 
+            # aggiorna la frequenza 
             self.update_frequency(u, v)
     
+
+## Cerca la componente connessa più grande nel grafo tramite una DFS (restituisce i nodi che appartengono alla componente connessa più grande)
 
     def largest_connected_component(self):  # Cerchiamo la componente connessa più grande tramite una DFS iterativa.
 
@@ -211,112 +253,74 @@ class Graph:
 
             if start_node in visited:
                 continue
-                # Saltiamo il resto dell'iterazione e passiamo al nodo successivo se é stato già visto
+                # passiamo al nodo successivo se é stato già visto
 
             component = set() # insieme che conterrà i nodi della componente che stiamo esplorando in questo momento.
 
-            stack = [start_node]
-            # Pila utilizzata per eseguire la DFS.
-            # Inizialmente contiene solo il nodo di partenza.
+            stack = [start_node] # stack utilizzato per eseguire la DFS, inizialmente contiene solo il nodo di partenza
 
             visited.add(start_node)
 
-            while stack:
-                # Continuiamo la visita finché ci sono nodi nella pila.
+            while stack: # continuiamo la visita finché ci sono nodi nella pila
 
-                node = stack.pop()
-                # Estraiamo l'ultimo nodo inserito nella pila.
-                # Questo comportamento LIFO realizza una DFS.
+                node = stack.pop() # estraiamo l'ultimo nodo inserito nella pila (lifo)
 
-                component.add(node)
-                # Aggiungiamo il nodo alla componente connessa corrente.
+                component.add(node) # aggiungiamo il nodo alla componente connessa corrente
 
+                # scorriamo tutti i vicini del nodo. Il dizionario interno ha la forma: {vicino: peso}
+                # qui vengono considerate solo le chiavi, cioè i vicini (perchè i pesi non servono per trovare le componenti connesse) 
+                
                 for neighbor in self.adjacency_list[node]:
-                    # Scorriamo tutti i vicini del nodo.
-                    # Il dizionario interno ha la forma:
-                    # {vicino: peso}
-                    # Qui vengono considerate solo le chiavi, cioè i vicini.
-                    # I pesi non servono per trovare le componenti connesse.
-
+                    
                     if neighbor not in visited:
-                        # Consideriamo solo i vicini
-                        # che non sono ancora stati visitati.
 
-                        visited.add(neighbor)
-                        # Segniamo il vicino come visitato.
+                        # aggiungiamo 
+                        visited.add(neighbor) 
+                        stack.append(neighbor) 
 
-                        stack.append(neighbor)
-                        # Inseriamo il vicino nella pila,
-                        # così verrà esplorato successivamente.
+            if len(component) > len(largest_component): # quando la DFS termina, abbiamo trovato un'intera componente connessa
 
-            if len(component) > len(largest_component):
-                # Quando la DFS termina, abbiamo trovato
-                # un'intera componente connessa.
-                # Confrontiamo il suo numero di nodi
-                # con quello della componente più grande trovata finora.
+                largest_component = component # confrontiamo il numero di nodi, se è più grande aggiorniamo la componente a quella più grande
 
-                largest_component = component
-                # Se la componente corrente è più grande,
-                # la salviamo come nuova componente più grande.
+        return largest_component # insieme di nodi della componente
 
-        return largest_component
-        # Restituiamo l'insieme dei nodi appartenenti
-        # alla componente connessa più grande.
-
+## Costruisce il grafo della componente connessa più grande 
 
     def get_largest_connected_subgraph(self):
-        # Troviamo i nodi appartenenti
-        # alla componente connessa più grande.
 
-        component_nodes = self.largest_connected_component()
+        component_nodes = self.largest_connected_component() # troviamo i nodi
 
-        # Creiamo un nuovo oggetto Graph.
-        # Il nuovo grafo mantiene la stessa proprietà del grafo originale:
-        # orientato se self.directed è True,
-        # non orientato se self.directed è False.
-
-        subgraph = Graph(directed=self.directed)
+        subgraph = Graph(directed=self.directed)    # creiamo un nuovo oggetto Graph
 
         for node in component_nodes:
-            # Scorriamo tutti i nodi della componente più grande.
 
-            subgraph.add_node(node)
-            # Aggiungiamo ogni nodo al nuovo sottografo.
-            # In questa fase ogni nodo viene creato
-            # con un dizionario dei vicini inizialmente vuoto.
+            subgraph.add_node(node) # aggiunge ogni nodo, che viene creato con un dizionario di vicini vuoto
 
         for from_node in component_nodes:
-            # Scorriamo nuovamente tutti i nodi
-            # della componente connessa più grande.
 
-            for to_node, weight in self.adjacency_list[from_node].items():
-                # Per ogni nodo, scorriamo tutti i suoi vicini
-                # e i relativi pesi nel grafo originale.
+            for to_node, weight in self.adjacency_list[from_node].items(): # per ogni nodo, scorriamo tutti i suoi vicini e i relativi pesi nel grafo originale
 
-                if to_node in component_nodes:
-                    # Copiamo l'arco soltanto se anche il vicino
-                    # appartiene alla componente connessa più grande.
+                if to_node in component_nodes: # copiamo l'arco soltanto se anche il vicino appartiene alla componente connessa più grande (dovrebbe di default)
 
-                    subgraph.adjacency_list[from_node][to_node] = weight
-                    # Copiamo direttamente l'arco e il suo peso.
-                    # Il peso non viene modificato né ricalcolato:
-                    # resta uguale a quello presente nel grafo originale.
+                    subgraph.adjacency_list[from_node][to_node] = weight # copiamo direttamente l'arco e il suo peso. Il peso resta uguale a quello presente nel grafo originale.
 
         return subgraph
-        # Restituiamo un nuovo oggetto Graph contenente soltanto
-        # la componente connessa più grande.
-        # Il grafo originale non viene modificato.
+
+
+## Carica i paths in due modalità, o dal file bz2 e dal file pkl 
+## Nota: il codice della lettura bz2 è ridondante nei due metodi ma in load_paths restituisce solo i cammini, nell'altra costruzione il grafo a partire dai cammini. 
+## Magari si può creare una funzione a sè stante che itera sul file e viene invocata in entrambi 
 
     @staticmethod
     def load_paths(filepath_bz2=None, filepath_pkl=None, max_paths=None):
         
         if filepath_bz2:
-            # legge direttamente dal bz2 fermandosi a max_paths
+            # legge direttamente dal bz2 (eventualmente fermandosi a max_paths)
             cammini = []
             contatore = 0
             with bz2.open(filepath_bz2, "rt") as f:
                 for riga in f:
-                    if contatore >= max_paths:
+                    if max_paths is not None and contatore >= max_paths:
                         break
                     if riga.startswith("#"):
                         continue
@@ -342,7 +346,7 @@ class Graph:
         contatore = 0
         with bz2.open(filepath, "rt") as f:
             for riga in f:
-                if max_paths and contatore >= max_paths:
+                if max_paths is not None and contatore >= max_paths:
                     break
                 if riga.startswith("#"):
                     continue
@@ -354,18 +358,24 @@ class Graph:
                     nodi = p.split("|")
                     cammino.extend(nodi)
                 if len(cammino) > 1:
-                    self.add_bgp_path(cammino)
+                    self.add_bgp_path(cammino) ## aggiunta dei cammini 
                     contatore += 1
         print(f"cammini letti: {contatore}")
+
+## Itera sui cammini e costruisce il grafo (puo farlo sia da file pkl che da bz2, basta passargli i cammini)
 
     def build_from_paths(self, paths):
         for path in paths:
             self.add_bgp_path(path)
 
+## Salva il grafo in un file pkl 
+
     def save_graph(self, filepath):
 
         with open(filepath, "wb") as f:
             pickle.dump(self, f)
+
+## Carica il file in memoria 
 
     @staticmethod
     def load_graph(filepath):
@@ -374,45 +384,66 @@ class Graph:
             return pickle.load(f)
 
 
-import time
-
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument("--max_paths", type=int, default=None)
+    parser.add_argument("--source", type=str, default="bz2", choices=["bz2", "pkl"],
+                        help="Sorgente dei cammini: bz2 (default) o pkl")
     args = parser.parse_args()
 
+    BZ2_PATH = "/code/ADSproject/data/20110501.all-paths.bz2"
+    
+    #PKL_PATH = "/code/ADSproject/data/cammini_test.pkl" ## quello da un milione lo utilizziamo per testing
+
+    PKL_PATH = "/code/ADSproject/data/cammini.pkl" ## quello intero
+
     graph_path = "/code/ADSproject/data/grafo.pkl"
-    largest_path = "/code/ADSproject/data/grafo_largest.pkl"
+    largest_path = "/code/ADSproject/data/grafo_largest_component.pkl"
 
     if args.max_paths:
         graph_path = "/code/ADSproject/data/grafo_test.pkl"
         largest_path = "/code/ADSproject/data/grafo_largest_test.pkl"
 
     if os.path.exists(largest_path):
+        print("carico il grafo largest dal pickle...")
         grafo = Graph.load_graph(largest_path)
     else:
         if os.path.exists(graph_path):
+            print("carico il grafo dal pickle...")
             grafo = Graph.load_graph(graph_path)
         else:
             grafo = Graph(directed=False)
-            
-            inizio = time.time()
-            grafo.build_from_bz2(
-                "/code/ADSproject/data/20110501.all-paths.bz2",
-                max_paths=args.max_paths
-            )
-            fine = time.time()
-            print(f"tempo costruzione grafo: {fine - inizio:.2f} secondi")
-            
+
+            if args.source == "bz2":
+                print(f"costruisco il grafo dal bz2 (max_paths={args.max_paths})...")
+                inizio = time.time()
+                grafo.build_from_bz2(BZ2_PATH, max_paths=args.max_paths)
+                fine = time.time()
+                print(f"tempo costruzione grafo da bz2: {fine - inizio:.2f} secondi")
+
+            else:  # pkl
+                print(f"carico i cammini dal pkl (max_paths={args.max_paths})...")
+                inizio = time.time()
+                cammini = Graph.load_paths(filepath_pkl=PKL_PATH)
+                fine = time.time()
+                print(f"tempo caricamento pkl: {fine - inizio:.2f} secondi")
+
+                if args.max_paths:
+                    cammini = cammini[:args.max_paths]
+
+                inizio = time.time()
+                grafo.build_from_paths(cammini)
+                fine = time.time()
+                print(f"tempo costruzione grafo da pkl: {fine - inizio:.2f} secondi")
+
             grafo.save_graph(graph_path)
 
         inizio = time.time()
         grafo = grafo.get_largest_connected_subgraph()
         fine = time.time()
         print(f"tempo largest component: {fine - inizio:.2f} secondi")
-        
         grafo.save_graph(largest_path)
 
-    print(f"nodi: {len(grafo.get_nodes())}")
+    print(f"\nnodi: {len(grafo.get_nodes())}")
     print(f"archi: {len(grafo.get_edges())}")

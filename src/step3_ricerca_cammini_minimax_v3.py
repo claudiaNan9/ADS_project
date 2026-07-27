@@ -23,7 +23,7 @@
 ## - path compression: anzichè formare una fila lunghissima di nodi attaccati a quella radice (per cui poi per trovarlo devo andare a ritroso tantissimo) 
 ## attaco direttamente i nuovi elementi alla radice 
 
-from step2_costruzione_grafo import Graph
+from old_script_versions.step2_costruzione_grafo_v1 import Graph
 import time
 from time import perf_counter
 
