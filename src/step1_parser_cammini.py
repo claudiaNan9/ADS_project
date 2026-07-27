@@ -1,5 +1,4 @@
 import bz2
-from functools import cache
 import pickle
 import os
 import argparse
@@ -24,11 +23,11 @@ def leggi_cammini(filepath, max_righe=None): ## max_righe serve per limitare il 
 
     with bz2.open(filepath, "rt") as f:
         for riga in f:
-            if max_righe and contatore >= max_righe:
+            if max_righe is not None and contatore >= max_righe:
                 break
             if riga.startswith("#"):   # salta i commenti e passa alla riga successiva
                 continue
-            parti = riga.strip().split() # splitto la riga in parti separate da spazi, es:
+            parti = riga.strip().split() # splitto la riga in parti separate da spazi
             cammino = []
             for p in parti[1:]: # salto la prima parte (routeviews/isc|5) 
                 if "/" in p or "." in p or ":" in p:  ## ignora gli elementi che sono indirizzi ip ecc
@@ -63,8 +62,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_righe", type=int, default=None)
     args = parser.parse_args()
 
-    if args.max_righe:
-        cache = "/code/ADSproject/data/cammini_test.pkl"
+    if args.max_righe is not None:
+        cache = "/code/ADSproject/data/cammini_test.pkl" # crea un file di test della dim che abbiamo definito (tipo 1M)
     else:
         cache = "/code/ADSproject/data/cammini.pkl"
 

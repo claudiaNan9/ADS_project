@@ -192,10 +192,14 @@ if __name__ == "__main__":
         # print(f"cammino: {cammino}")
 
         ### qui usiamo per_counter che forse è un pochino meglio nel calcolo dei tempi (dicono) ####
+        
+        # grafo di test più piccolo 
 
-        grafo = Graph.load_graph(
-            "/code/ADSproject/data/grafo_largest_test.pkl"
-        )
+        # grafo = Graph.load_graph(
+                #     "/code/ADSproject/data/grafo_largest_test.pkl"
+                # )
+
+        grafo = Graph.load_graph( "/code/ADSproject/data/grafo.pkl")
 
         inizio = perf_counter()
         mst, mst_weight = kruskal(grafo)
@@ -206,8 +210,8 @@ if __name__ == "__main__":
         print(f"Nodi MST: {len(mst.get_nodes())}")
         print(f"Archi MST: {len(mst.get_edges())}")
 
-        start = 24
-        target = 493
+        start = 702
+        target = 4436
 
         costo, cammino, pesi = minimax_query_dfs(mst, start, target)
 

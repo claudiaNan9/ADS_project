@@ -1,15 +1,15 @@
-# Progetto ASD – Cammini Minimax su Grafo AS
+# Progetto ASD 2026 – Ricerca Cammini Minimax su Grafo Autonomous Systems
 
 ## Descrizione generale
 
-Questo progetto ha l'obiettivo di implementare strutture dati ed algoritmi per risolvere il problema di cammino minimax su grafi. In particolare, vogliamo rispondere a query di cammino minimax su un grafo di Autonomous Systems (AS), costruito a partire da dati BGP reali.
+Questo progetto ha l'obiettivo di implementare strutture dati ed algoritmi per risolvere il problema di cammino minimax su grafi. In particolare, vogliamo rispondere a query di ricerca del cammino minimax su un grafo di Autonomous Systems (AS), costruito a partire da dati BGP reali.
 
-Quindi, dato un grafo non orientato pesato G = (V, E), dove:
-- ogni nodo rappresenta un Autonomous System (AS)
-- ogni arco rappresenta una relazione di adiacenza osservata nei cammini BGP
-- il peso di un arco è la sua frequenza con cui l'arco compare nei cammini BGP
+Più precisamente, dato un grafo non orientato pesato G = (V, E), dove:
+- ogni nodo rappresenta un Autonomous System (AS);
+- ogni arco rappresenta una relazione di adiacenza osservata nei cammini BGP;
+- il peso di un arco è la frequenza con cui l'arco compare nei cammini BGP;
 
-La query a cui dobbiamo rispondere è del tipo: dati due nodi u e v, trovare il costo del cammino minimax ottimo da u a v, dove il costo di un cammino è il massimo peso tra gli archi attraversati.
+La query a cui dobbiamo rispondere è del tipo: dati due nodi u e v, trovare il costo del cammino minimax ottimo da u a v, dove il costo di un cammino è il massimo peso tra gli archi attraversati (si vuole quindi minimizzare il massimo peso attraversato).
 
 ## Dati
 
@@ -17,64 +17,83 @@ I dati provengono da due sorgenti:
 - `*.all-paths.bz2` (RIPE/RouteViews): cammini BGP reali osservati, usati per calcolare le frequenze degli archi
 - `*.as-rel.txt.bz2` (CAIDA): relazioni tra AS, usate per verificare la struttura del grafo
 
-## Architettura
+Nello specifico, quelli scelti per lo svolgimento di questo progetto sono: `20110501.all-paths.bz2` e `20110501.as-rel.txt.bz2`.
 
-Il progetto puó essere organizzato idealmente nei seguenti script che svolgono i compiti necessari.
+## Metodologia
 
-### 1. `parser` – Caricamento dei dataset
-Legge i file `.bz2` e ne estrae le informazioni.
-- Dal file `all-paths`: estrae i cammini BGP e aggiorna le frequenze degli archi
-- Dal file `as-rel`: carica le relazioni tra AS 
+Per affrontare il problema è stata scelta la seguente metodologia. 
+1. Per prima cosa, il file contenente i cammini BGP viene inizialmente analizzato per estrarre solamente le sequenze di nodi Autonomous System e i relativi cammini, eliminando dati superflui delle righe del dataset. I dati elaborati vengono poi salvati in formato pickle, così da evitare di rileggere ogni volta il file compresso originale. A partire dai cammini viene costruito un grafo pesato e non orientato, in cui ogni nodo rappresenta un AS e ogni arco rappresenta una relazione di adiacenza. Il peso di un arco corrisponde alla frequenza con cui l'arco compare nel dataset dei cammini BGP. Poiché il grafo può essere disconnesso, si considera soltanto la componente connessa più grande, come richiesto dal problema.
+2. Per rispondere alle query minimax viene costruito un Minimum Spanning Tree mediante l’algoritmo di Kruskal. Questa scelta deriva dalla proprietà per cui, nel cammino tra due nodi all’interno di un MST, il massimo peso attraversato è minimo rispetto a tutti i possibili cammini tra gli stessi nodi nel grafo originale. Kruskal ordina gli archi per frequenza crescente e li inserisce nell’albero solo se non generano cicli. Per controllare efficientemente la presenza di cicli viene utilizzata una struttura Union-Find con path compression e union by rank.
+Nota: Dijkstra non è applicabile al problema del cammino minimax perché non vale la proprietà che un sottocammino di un cammino minimax sia anch'esso ottimo minimax. Per il minimax questa proprietà non vale. Kruskal invece garantisce il cammino minimax ottimo perché aggiunge sempre l'arco più  leggero disponibile. Di conseguenza, il cammino che si forma nell'MST tra due nodi usa automaticamente gli archi più leggeri possibili — minimizzando quindi il massimo peso attraversato. In altre parole, abbiamo automaticamente escluso i percorsi alternativi sapendo che avrebbero avuto un costo maggiore o uguale.
+3. Una volta costruito l'MST, ogni query tra due nodi viene risolta tramite una DFS. Poiché l'MST è un albero (grafo connesso senza cicli), tra due nodi esiste un unico 
+cammino possibile — quindi la DFS lo trova sempre in modo univoco. Ci verrà restituito un solo cammino minimax, che è uno dei cammini minimax ottimi presenti nel grafo originale (potrebbero esisterne altri con lo stesso costo - traccia 2 opzionale del progetto). Durante la visita si mantiene il massimo peso incontrato: tale valore rappresenta il costo minimax ottimo della query.
+4. In ultimo viene effettuata un'analisi sperimentale, raccogliendo statistiche sul dataset e e verificando sperimentalmente le complessità attese degli algoritmi.
 
-### 2. `grafo` – Costruzione del grafo
-Costruisce il grafo non orientato pesato G = (V, E) a partire dai cammini BGP.
-- Struttura dati: liste di adiacenza implementate come vector per rappresentare il grafo 
-- Funzioni di gestione del grafo e degli archi
 
-### 3. `minimum spanning tree` – Costruzione del Minimum Spanning Tree
-Implementa l'algoritmo di Kruskal per costruire il MST del grafo.
-- Union-Find per il rilevamento efficiente dei cicli
-- Il MST è la struttura su cui vengono eseguite le query minimax
+## Architettura del progetto 
 
-### 4. `query/ricerca` – Ricerca del cammino minimax
-Data una coppia di nodi (u, v), trova il cammino minimax ottimo sul MST tramite DFS/BFS.
-- Input: due nodi u e v
-- Output: costo ottimo minimax e cammino corrispondente
-
-### 5. `analisi` – Analisi sperimentale
-Raccoglie e riporta le statistiche sperimentali:
-- numero di nodi e archi del grafo
-- distribuzione delle frequenze sugli archi
-- costo ottimo per coppie di nodi campione
-- tempi di esecuzione degli algoritmi
-
-## Struttura del repository
+Il progetto è organizzato nei seguenti script che svolgono task specifici per ogni fase del progetto. Verranno descritti nel dettaglio nelle sezioni successive.
 
 ```
-progetto-as/
-├── data/           # file .bz2 scaricati (non inclusi nel repository perchè troppo pesanti, verrà indicato il file corrispondente)
+progetto-asd/
+├── data/           # file .bz2 scaricati (non inclusi nel repository perchè troppo pesanti)
 ├── src/
-│   ├── parser.py   # caricamento e parsing dei dataset
-│   ├── grafo.py    # costruzione del grafo AS
-│   ├── mst.py      # algoritmo di Kruskal + Union-Find
-│   ├── query.py    # ricerca cammini minimax
-│   └── analisi.py  # analisi sperimentale
-── notebooks/       # jupyter notebook di prova per capire/visualizzare alcuni passaggi 
+│   ├── step1_parser_cammini.py   # caricamento e parsing dei dataset
+│   ├── step2_costruzione_grafo.py    # costruzione del grafo AS
+│   ├── step3_ricerca_cammini_minimax.py      # algoritmo di Kruskal + Union-Find + DFS per query
+│   └── step4_analisi_sperimentale.ipynb  # analisi sperimentale
+|── notebooks/       # jupyter notebook di prova per capire/visualizzare alcuni passaggi 
 ├── main.py         # punto di ingresso del programma
 └── documentazione_progetto.md       # documento di progettazione delle varie fasi e delle scelte di implementazione
 ```
 
 ## Procedimento
+Di seguito viene illustrato il procedimento seguito e l'implementazione corrispondente per ogni script che abbiamo introdotto nella sezione Architettura del progetto. Ogni step è stato precedentemente testato nel notebook inspect_data.ipynb per capirne meglio il funzionamento. Questo notebook quindi segue il flusso complessivo del progetto.
 
-Il primo step è capire come sono fatti i file e ispezionare i dati, questi passaggi di verifica verranno fatti in appositi notebooks. In notebooks/inspect_data.ipynb apriamo i file per vedere come sono fatti dentro e stampare qualcosa. 
+## Primo step: step1_parser_cammini.py
 
-Il risultato di questa fase di ispezione è lo script: step1_parser_cammini.py, che estrae dal file all paths i cammini BGP. Nello specifico, rimuove le parti inutili della stringa del tipo: routeviews/isc|5 4436|6762|21826 200.82.128.0/24 i 198.32.176.13 e restituisce solo la lista di nodi corrispondente. L'output dello script è un file pkl dove vengono salvati tutti i cammini (lista di liste).
+Il primo step è capire come sono fatti i file e ispezionare i dati. In notebooks/inspect_data.ipynb apriamo i file per vedere come sono fatti dentro e stampare le righe che ci interessa analizzare. Il risultato di questa fase di ispezione è lo script: step1_parser_cammini.py, che estrae dal file all paths i cammini BGP. Nello specifico, rimuove le parti inutili della stringa del tipo: routeviews/isc|5 4436|6762|21826 200.82.128.0/24 i 198.32.176.13 e restituisce solo la lista di nodi corrispondente. L'output dello script è un file pkl dove vengono salvati tutti i cammini (lista di liste).
+
+### Input
+
+Lo script utilizza come input il file compresso `20110501.all-paths.bz2`. Ogni riga del dataset contiene informazioni sulla sorgente, una sequenza di nodi e alcuni indirizzi di rete. Una riga del dataset è del tipo: `routeviews/isc|5 4436|6762|21826 200.82.128.0/24 i 198.32.176.13` e a noi interessa estrarre soltanto la parte relativi al cammino, ovvero la sequenza di nodi 4436|6762|21826. 
+Lo script può essere lanciato col parametro opzionale --max_righe N, dove `N` indica il numero massimo di cammini validi da estrarre. Il limite riguarda i cammini salvati, non necessariamente il numero totale di righe esaminate. Questa opzione è utile per testing.
+
+### Output
+
+Lo script restituisce una lista di cammini. Ogni cammino è rappresentato come una lista di liste di stringhe contenenti gli identificativi dei nodi:[["4436", "6762", "21826"],["6939", "15290", "2671", "2669"]]. I risultati vengono salvati nei seguenti file: cammini.pkl per l’elaborazione completa di tutti i cammini, oppure cammini_test.pkl quando viene utilizzato il parametro `--max_righe`. Al termine dell’esecuzione vengono stampati il numero totale di cammini e i primi cinque cammini estratti.
+
+### Funzionalità
+
+La funzione `leggi_cammini` apre il file BZ2 in modalità testuale e lo legge progressivamente. Le righe di commento vengono ignorate.
+
+Per ogni riga, lo script:
+
+1. separa gli elementi tramite gli spazi;
+2. ignora il primo elemento, che identifica la sorgente;
+3. legge i nodi separati dal carattere `|`;
+4. interrompe l’analisi quando incontra indirizzi IP o altri elementi contenenti `/`, `.` oppure `:`;
+5. conserva soltanto i cammini formati da almeno due nodi.
+
+La funzione `salva_cammini` restituisce il file pkl, mentre `carica_cammini` ricostruisce la struttura dati da un file pkl già esistente. Prima di analizzare il dataset, lo script controlla quindi se è disponibile una versione precedentemente salvata.
+
+### Strutture dati
+
+La struttura principale è una lista di liste, cammini: list[list[str]]. La lista esterna contiene tutti i cammini validi. Ogni lista interna contiene, nell’ordine originale, gli identificativi dei nodi AS appartenenti a un singolo cammino.
+
+
+### Complessità
+
+La funzione `leggi_cammini` ha complessità lineare O(N), dove N è la lunghezza totale in caratteri del file di input. Per ogni riga vengono eseguite operazioni di parsing (strip, split, extend) che hanno tutte tempo costante O(1), quindi il tempo totale è proporzionale al numero di righe lette. La complessità spaziale è O(C) dove C è il numero totale di cammini estratti, poiché vengono conservati interamente in memoria. Anche le operazioni di salvataggio e caricamento tramite pickle hanno complessità O(C) poiché dipendono dal numero di cammini serializzati.
+
+## Secondo step: step2_costruzione_grafo.py
 
 Lo step successivo sarà estrarre da queste liste gli archi e le loro frequenze per la costruzione del grafo. Una possibile successione di passaggi potrebbe essere:
 - estrazione degli archi e conteggio delle frequenze (struttura defaultdict di python): questa operazione dovrà gestire i self loop e la frequenza di archi uguali (1,2 e 2,1 ad esempio). Una soluzione semplice è stata testata in inspect_data, vediamo come adattarla alla fase successiva di costruzione del grafo.
 
 Inspect_data riflette il flusso seguito a partire dai cammini estratti. Le frequenze sono state estrapolate e salvate come frequenze = defaultdict(int) 
 (la differenza tra dict e defaultdict è che in defaultdict si può definire un caso di default e il tipo che prendono i valori, in questo caso int della frequenza. Se si fa frequenze[0] non dà key error perchè la chiave non esiste ma la crea di default con chiave 0 e valore 0). 
+
 
 Poi ho provato da frequenze a costruire il grafo considerandolo come un dizionario di dizionari, dove la chiave è il nodo e il valore è un dizionario contenente i vicini e il peso (frequenza). Il risultato è del tipo: {4436: {6762: 1, 701: 1, 2914: 1} ..}. 
 

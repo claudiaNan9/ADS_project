@@ -386,10 +386,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     BZ2_PATH = "/code/ADSproject/data/20110501.all-paths.bz2"
-    PKL_PATH = "/code/ADSproject/data/cammini_test.pkl" ## quello da un milione
+    
+    #PKL_PATH = "/code/ADSproject/data/cammini_test.pkl" ## quello da un milione lo utilizziamo per testing
+
+    PKL_PATH = "/code/ADSproject/data/cammini.pkl" ## quello intero
 
     graph_path = "/code/ADSproject/data/grafo.pkl"
-    largest_path = "/code/ADSproject/data/grafo_largest.pkl"
+    largest_path = "/code/ADSproject/data/grafo_largest_component.pkl"
 
     if args.max_paths:
         graph_path = "/code/ADSproject/data/grafo_test.pkl"
