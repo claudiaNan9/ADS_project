@@ -50,20 +50,22 @@ progetto-asd/
 ## Procedimento
 Di seguito viene illustrato il procedimento seguito e l'implementazione corrispondente per ogni script che abbiamo introdotto nella sezione Architettura del progetto. Ogni step è stato precedentemente testato nel notebook inspect_data.ipynb per capirne meglio il funzionamento. Questo notebook quindi segue il flusso complessivo del progetto.
 
-## Primo step: step1_parser_cammini.py
+## Primo step: Parsing dei cammini 
 
 Il primo step è capire come sono fatti i file e ispezionare i dati. In notebooks/inspect_data.ipynb apriamo i file per vedere come sono fatti dentro e stampare le righe che ci interessa analizzare. Il risultato di questa fase di ispezione è lo script: step1_parser_cammini.py, che estrae dal file all paths i cammini BGP. Nello specifico, rimuove le parti inutili della stringa del tipo: routeviews/isc|5 4436|6762|21826 200.82.128.0/24 i 198.32.176.13 e restituisce solo la lista di nodi corrispondente. L'output dello script è un file pkl dove vengono salvati tutti i cammini (lista di liste).
 
-### Input
+### Step1_parser_cammini.py
+
+#### Input
 
 Lo script utilizza come input il file compresso `20110501.all-paths.bz2`. Ogni riga del dataset contiene informazioni sulla sorgente, una sequenza di nodi e alcuni indirizzi di rete. Una riga del dataset è del tipo: `routeviews/isc|5 4436|6762|21826 200.82.128.0/24 i 198.32.176.13` e a noi interessa estrarre soltanto la parte relativi al cammino, ovvero la sequenza di nodi 4436|6762|21826. 
 Lo script può essere lanciato col parametro opzionale --max_righe N, dove `N` indica il numero massimo di cammini validi da estrarre. Il limite riguarda i cammini salvati, non necessariamente il numero totale di righe esaminate. Questa opzione è utile per testing.
 
-### Output
+#### Output
 
 Lo script restituisce una lista di cammini. Ogni cammino è rappresentato come una lista di liste di stringhe contenenti gli identificativi dei nodi:[["4436", "6762", "21826"],["6939", "15290", "2671", "2669"]]. I risultati vengono salvati nei seguenti file: cammini.pkl per l’elaborazione completa di tutti i cammini, oppure cammini_test.pkl quando viene utilizzato il parametro `--max_righe`. Al termine dell’esecuzione vengono stampati il numero totale di cammini e i primi cinque cammini estratti.
 
-### Funzionalità
+#### Funzionalità
 
 La funzione `leggi_cammini` apre il file BZ2 in modalità testuale e lo legge progressivamente. Le righe di commento vengono ignorate.
 
@@ -77,41 +79,21 @@ Per ogni riga, lo script:
 
 La funzione `salva_cammini` restituisce il file pkl, mentre `carica_cammini` ricostruisce la struttura dati da un file pkl già esistente. Prima di analizzare il dataset, lo script controlla quindi se è disponibile una versione precedentemente salvata.
 
-### Strutture dati
+#### Strutture dati
 
 La struttura principale è una lista di liste, cammini: list[list[str]]. La lista esterna contiene tutti i cammini validi. Ogni lista interna contiene, nell’ordine originale, gli identificativi dei nodi AS appartenenti a un singolo cammino.
 
 
-### Complessità
+#### Complessità
 
 La funzione `leggi_cammini` ha complessità lineare O(N), dove N è la lunghezza totale in caratteri del file di input. Per ogni riga vengono eseguite operazioni di parsing (strip, split, extend) che hanno tutte tempo costante O(1), quindi il tempo totale è proporzionale al numero di righe lette. La complessità spaziale è O(C) dove C è il numero totale di cammini estratti, poiché vengono conservati interamente in memoria. Anche le operazioni di salvataggio e caricamento tramite pickle hanno complessità O(C) poiché dipendono dal numero di cammini serializzati.
 
 ## Secondo step: step2_costruzione_grafo.py
 
-Lo step successivo sarà estrarre da queste liste gli archi e le loro frequenze per la costruzione del grafo. Una possibile successione di passaggi potrebbe essere:
-- estrazione degli archi e conteggio delle frequenze (struttura defaultdict di python): questa operazione dovrà gestire i self loop e la frequenza di archi uguali (1,2 e 2,1 ad esempio). Una soluzione semplice è stata testata in inspect_data, vediamo come adattarla alla fase successiva di costruzione del grafo.
+Lo step successivo riguarda la costruzione del grafo a partire dai cammini BGP estratti precedentemente dal file 20110501.all-paths.bz2. In sintesi, l'obiettivo di questo step è quello di estratte dalle liste gli archi e le loro frequenze e a partire da queste costruire dinamicamente il grafo inserendo gli archi e aggiornando le frequenze dei cammini. Anche in questo caso abbiamo fatto qualche test preliminare nel notebook inspect_data.ipynb. 
+Nel notebook, le frequenze sono state estrapolate e salvate come frequenze = defaultdict(int) (la differenza tra dict e defaultdict è che in defaultdict si può definire un caso di default e il tipo che prendono i valori, in questo caso int della frequenza. Se si fa frequenze[0] non dà key error perchè la chiave non esiste ma la crea di default con chiave 0 e valore 0). Poi ho provato a costruire il grafo considerandolo come un dizionario di dizionari, dove la chiave è il nodo e il valore è un dizionario contenente i vicini e il peso (frequenza), cioè la lista di adiacenza. Il risultato è del tipo: {4436: {6762: 1, 701: 1, 2914: 1} ..}. Partendo da queste strutture dati possiamo definire una classe Graph che permetta di inizializzare un oggetto Graph con le strutture dati dedicate e funzionalità per gestire il grafo stesso. Di seguito i dettagli di implementazione. 
 
-Inspect_data riflette il flusso seguito a partire dai cammini estratti. Le frequenze sono state estrapolate e salvate come frequenze = defaultdict(int) 
-(la differenza tra dict e defaultdict è che in defaultdict si può definire un caso di default e il tipo che prendono i valori, in questo caso int della frequenza. Se si fa frequenze[0] non dà key error perchè la chiave non esiste ma la crea di default con chiave 0 e valore 0). 
-
-
-Poi ho provato da frequenze a costruire il grafo considerandolo come un dizionario di dizionari, dove la chiave è il nodo e il valore è un dizionario contenente i vicini e il peso (frequenza). Il risultato è del tipo: {4436: {6762: 1, 701: 1, 2914: 1} ..}. 
-
-Partendo da questi tentativi possiamo abbozzare una classe Graph (fatta nel notebook ma da rifinire per lo script), con le seguenti funzioni generali:
-- inizializza la struttura dati come dizionario di dizionari (liste di adiacenza)
-- inserimento/rimozione di: nodi e archi 
-- controlli vari (ha un nodo/arco)
-- legge i nodi/archi e li restituisce
-- converte gli ID AS in interi (sono stringhe). Decido di non trasformali in interi consecutivi perchè in Python stiamo usando i dizionari che non hanno problemi con valori sparsi e la differenza in efficienza non dovrebbe esserci (aveva senso trasformarli in c++ credo usando vector per accedere alle posizioni?)
-
-poi ci sono le funzioni dedicate al fatto che stiamo leggendo direttamente i percorsi BGP quindi creiamo il grafo sulla base di quello. 
-- aggiungere i percorsi 
-- aggiornare la frequenza 
-- trovare la componente connessa più grande (tramite DFS)
-
-Questa fase di esplorazione ha portato alla costruzione della classe Graph implementata nello script step2_costruzione_grafo.py
-
-## Modulo: Graph (costruzione_grafo.py) (prima bozza)
+## Modulo: Graph (costruzione_grafo.py) 
 
 Classe che permette di creare un oggetto grafo non orientato e pesato, che implementa funzionalità di gestione generale e di costruzione attraverso la lettura di cammini BGP. Di seguito le specifiche.
 
