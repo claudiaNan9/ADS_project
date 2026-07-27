@@ -148,41 +148,44 @@ Il grafo viene rappresentato come un dizionario di dizionari (dict) dove la chia
 Il totale è quindi proporzionale alla lunghezza del cammino. `build_from_paths` e `build_from_bz2` hanno complessità O(N) dove N è la lunghezza totale di tutti i cammini — chiamano `add_bgp_path` su ogni cammino, e la somma delle lunghezze è N. `largest_connected_component` ha complessità O(V+E) perché implementa una DFS che visita ogni nodo una volta sola O(V) e percorre ogni arco una volta sola O(E).
 
 ## Step 3: Ricerca cammino minimax ottimo
-### Idea generale
-L'obiettivo é trovare il costo del cammino minimax ottimo dati due nodi u e v. Quindi dobbiamo trovare il percorso che costa meno per andare da u a v, dove il costo è definito come la frequenza massima di un arco lungo quel percorso. dobbiamo minimizzare questo costo.
 
-L'idea è quella di trovare il Minimum Spanning Tree dal punto A al punto B, che mi garantisce di trovare sempre il cammino ottimo, con costo minore. 
-Usiamo l'algoritmo di Kruskal e non quello di Prim perchè il grafo sembra sparso (ad esempio sul testo che abbiamo fatto: nodi: 37020 e archi: 65910) quindi dovrebbe essere più efficiente.
+L'obiettivo é trovare il costo del cammino minimax ottimo dati due nodi u e v. Quindi dobbiamo trovare il percorso che costa meno per andare da u a v, dove il costo è definito come la frequenza massima di un arco lungo quel percorso. Dobbiamo minimizzare questo costo. L'idea è quella di trovare il Minimum Spanning Tree dal punto A al punto B, che mi garantisce di trovare sempre il cammino ottimo, con costo minore. Usiamo l'algoritmo di Kruskal e non quello di Prim perchè il grafo sembra sparso (ad esempio sul sottoinsieme di test che abbiamo utilizzato inizialmente, dove leggevamo 1M di cammini,otteniamo nodi: 37020 e archi: 65910.) quindi risulta essere la scelta più efficiente.
 
-Gli step da fare per implementare l'algoritmo sono: 
+Gli step da fare per implementare l'algoritmo sono: ordinare tutti gli archi per peso crescente, aggiungere un arco alla volta, saltando quelli che creerebbero un ciclo, fermarsi quando tutti i nodi sono connessi. Per rilevare efficientemente i cicli, usiamo la struttura Union-Find (detta anche Disjoint Set Union). Se due nodi appartengono allo stesso set allora non li uniamo perchè formebbero un ciclo. L'MST potrebbe essere salvato come oggetto Graph contenente solo gli archi dell'albero. Per rispondere a una query (u, v) si fa una BFS o DFS sull'MST — il cammino trovato è automaticamente il cammino minimax ottimo, e il suo costo è il massimo peso tra gli archi attraversati.
 
-1. ordina tutti gli archi per peso crescente 
-2. aggiunge un arco alla volta, saltando quelli che creerebbero un ciclo
-3. si ferma quando tutti i nodi sono connessi
+### step3_ricerca_cammini_minimax.py
 
-Per rilevare efficientemente i cicli, usiamo la struttura Union-Find (detta anche Disjoint Set Union). Se due nodi appartengono allo stesso set allora non li uniamo perchè formebbero un ciclo.
+Lo script step3_ricerca_cammini_minimax.py costruisce il Minimum Spanning Tree (MST) di un grafo non orientato pesato con l'algoritmo di Kruskal, usa una Union-Find ottimizzata e risponde a query minimax (il minimo tra i massimi pesi sui cammini) tramite DFS sull'MST.
 
-L'MST potrebbe essere salvato come oggetto Graph contenente solo gli archi dell'albero. Per rispondere a una query (u, v) si fa una BFS o DFS sull'MST — il cammino trovato è automaticamente il cammino minimax ottimo, e il suo costo è il massimo peso tra gli archi attraversati.
+#### Input
+- Un oggetto `Graph` non orientato e pesato, caricato dal file `grafo.pkl` (se il grafo è completamente connesso) oppure dal file `grafo_largest_component.pkl` (se il grafo non è completamente connesso e abbiamo trovato la componente connessa più grande), in cui ogni arco ha la forma `(from_node, to_node, frequenza)` (proveniente dal metodo della classe Graph get_edges). 
+- Per le query: due nodi `start` e `target` appartenenti all'MST.
 
-### Implementazione 
+#### Output
+- `mst`: un oggetto `Graph` non orientato che rappresenta l'albero di copertura minimo.
+- `mst_weight`: il peso totale (somma dei pesi degli archi selezionati).
+- Per ogni query minimax: `(costo, cammino, pesi)`, dove `costo` è il peso massimo lungo il cammino ottimale nell'MST, `cammino` è la lista dei nodi attraversati e `pesi` è la lista dei pesi degli archi percorsi.
 
-**Union-Find** è implementata come classe separata `UnionFind` in `step3_ricerca_cammini_minimax_v3.py`. Viene inizializzata con n elementi, dove n è il numero di nodi del grafo. Internamente usa due ottimizzazioni:
+#### Strutture Dati
+- **Lista di tuple/triple**: ogni arco ha la forma `(from_node, to_node, frequenza)`; questo è l'output proveniente dal metodo della classe Graph get_edges. Questa struttura dati, a differenza di un dizionario che poteva essere implementato come {(from_node,to_node) : frequenza}, risulta piú efficiente in fase di ordinamento degli archi per l'algoritmo di Kruskal. 
+- **Union-Find (Disjoint Set)**: liste `parent` e `rank`. Internamente usa due ottimizzazioni:
+  - **path compression**: quando si cerca la radice di un nodo, tutti i nodi incontrati lungo il percorso vengono collegati direttamente alla radice, rendendo le ricerche future più veloci.
+  - **union by rank**: quando si uniscono due insiemi, l'albero più basso viene attaccato a quello più alto (col rank più alto), evitando di creare alberi sbilanciati.
+- **`node_to_index`**: dizionario che mappa gli identificatori dei nodi (es. AS) a indici consecutivi `0..n-1`, così da poter usare le liste di Union-Find.
+- **`Graph` (adjacency list)**: struttura del grafo/MST come dizionario `{nodo: {vicino: peso}}`.
+- **Stack (lista)**: usato dalla DFS iterativa; ogni elemento è la tupla tripla`(nodo, max_peso_corrente, cammino)`.
 
-- **path compression**: quando si cerca la radice di un nodo, tutti i nodi incontrati lungo il percorso vengono collegati direttamente alla radice, rendendo le ricerche 
-  future più veloci
-- **union by rank**: quando si uniscono due insiemi, l'albero più basso viene attaccato a quello più alto, evitando di creare alberi sbilanciati
+#### Funzioni
+- **`UnionFind.__init__(n)`**: inizializza `parent` e `rank`.
+- **`UnionFind.find(x)`**: trova la radice del set con path compression.
+- **`UnionFind.union(x, y)`**: unisce due set con union by rank; ritorna `True` se l'unione avviene, `False` se erano già nello stesso set (ciclo).
+- **`kruskal(graph)`**: verifica che il grafo sia non orientato, ordina gli archi per peso crescente e li aggiunge all'MST se non formano cicli, fino a `V-1` archi. Solleva errore se il grafo non è connesso.
+- **`minimax_query_dfs(mst, start, target)`**: percorre l'MST in DFS per trovare l'unico cammino tra due nodi e restituisce il peso massimo su quel cammino.
 
-Nota: Union-Find lavora internamente con indici interi consecutivi 0, 1, 2... — quindi gli AS vengono mappati temporaneamente in indici tramite `node_to_index` solo per questa struttura, senza modificare il grafo.
+#### Complessità
+Con V = numero di nodi e E = numero di archi:
+- **Kruskal**: O(E log V) dominata dall'ordinamento degli archi; le operazioni di Union-Find costano O(α(V)) ammortizzato grazie a path compression e union by rank.
+- **Query minimax (DFS su MST)**: O(V), poiché l'MST ha esattamente V-1 archi e ogni nodo/arco viene visitato al più una volta.
 
-**Kruskal** è implementato come funzione `kruskal(graph)` che:
-- prende in input un oggetto `Graph` non orientato e connesso
-- ordina gli archi per frequenza crescente con `edges.sort()` — 
-- itera sugli archi e usa `union_find.union()` per decidere se aggiungere l'arco
-- restituisce un oggetto `Graph` contenente solo gli archi dell'MST e il peso totale
-
-**Query minimax** è implementata come funzione `minimax_query_dfs(mst, start, target)` che fa una DFS sull'MST. Ogni elemento dello stack contiene:
-- il nodo corrente
-- il massimo peso incontrato fino a quel punto
-- il cammino seguito
-
-Quando raggiunge il nodo target, restituisce il costo minimax (massimo peso sul cammino) e il cammino completo. 
+## Step 4: Analisi Sperimentale
+L'ultimo step è quello di verificare sperimentalmente che gli algoritmi implementati nei passi precedenti rispettino effettivamente le complessità teoriche dichiarate. L'idea è quella di eseguire ogni funzione principale (leggi_cammini, build_from_bz2, largest_connected_component, kruskal, minimax_query_dfs) su input di dimensione crescente misurando il tempo di esecuzione a ogni dimensione. Osservando come il tempo cresce al crescere della dimensione dell'input a seconda dell'algoritmo possiamo confermare empiricamente le complessità O(N), O(V+E), O(E log V) e O(V) discusse negli step precedenti. In questa fase viene inoltre verificata l'ipotesi fatta nello step 2 sulla lettura dei cammini, cioè che costruire il grafo a partire dal file pkl già estratto risulta effettivamente più veloce rispetto al parsing diretto del bz2, poiché evita di rifare il parsing testuale già svolto in step1. L'intera analisi sarà raccolta nel notebook step4_analisi_sperimentale.ipynb perchè è più facile visualizzare i risultati. 

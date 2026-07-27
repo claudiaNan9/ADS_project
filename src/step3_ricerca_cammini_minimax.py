@@ -23,7 +23,7 @@
 ## - path compression: anzichè formare una fila lunghissima di nodi attaccati a quella radice (per cui poi per trovarlo devo andare a ritroso tantissimo) 
 ## attaco direttamente i nuovi elementi alla radice 
 
-from old_script_versions.step2_costruzione_grafo_v1 import Graph
+from step2_costruzione_grafo import Graph
 import time
 from time import perf_counter
 
@@ -199,7 +199,8 @@ if __name__ == "__main__":
                 #     "/code/ADSproject/data/grafo_largest_test.pkl"
                 # )
 
-        grafo = Graph.load_graph( "/code/ADSproject/data/grafo.pkl")
+        grafo = Graph.load_graph( "/code/ADSproject/data/grafo.pkl") # carichiamo direttamente tutto il grafo se è connesso 
+        #largest_component = Graph.load_graph("/code/ADSproject/data/grafo_largest_component.pkl") # il largest component se il grafo non è connesso e abbiamo trovato la componente più grande
 
         inizio = perf_counter()
         mst, mst_weight = kruskal(grafo)

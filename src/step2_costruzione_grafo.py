@@ -187,21 +187,23 @@ class Graph:
     def get_nodes(self):
         return list(self.adjacency_list.keys())
 
-## Restituisce gli archi
+## Restituisce gli archi nella forma [(from_node,to_node,frequenza)]. 
 
     def get_edges(self):
         edges = []
-        seen = set()
 
-        for from_node, neighbors in self.adjacency_list.items():
-            for to_node, weight in neighbors.items():
-
-                if not self.directed:
+        if not self.directed:
+            seen = set() 
+            for from_node, neighbors in self.adjacency_list.items():
+                for to_node, weight in neighbors.items():
                     arco = (min(from_node, to_node), max(from_node, to_node)) ## prende una unica entry tra (2,3) (3,2)
-
                     if arco not in seen:
                         seen.add(arco)
                         edges.append((from_node, to_node, weight))
+        else:
+            for from_node, neighbors in self.adjacency_list.items():  # grafo orientato, ci servono entrambi
+                for to_node, weight in neighbors.items():
+                    edges.append((from_node, to_node, weight))
 
         return edges
 
