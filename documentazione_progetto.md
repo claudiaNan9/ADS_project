@@ -203,7 +203,7 @@ Lo script main.py è il punto di ingresso del progetto: esegue gli step 1-3 in u
 
 - `--max_paths N`: limita il numero di cammini letti, utile per test su un sottoinsieme dei dati.
 - `--source bz2|pkl`: sorgente da cui leggere i cammini (default bz2).
-- `--start`, `--target`: nodi AS su cui eseguire la query minimax.
+- `--start`, `--target`: nodi AS su cui eseguire la query minimax. Piccola nota sui nodi: siccome non abbiamo convertito gli identificatori AS l'utente deve specificare nodi reali del grafo, se non esistono quelli che inserire compare un messaggio di errore e dei nodi di suggerimento.
 
 ## Step 4: Analisi Sperimentale
 L'ultimo step è quello di verificare sperimentalmente che gli algoritmi implementati nei passi precedenti rispettino effettivamente le complessità teoriche dichiarate. L'idea è quella di eseguire ogni funzione principale (leggi_cammini, build_from_bz2, largest_connected_component, kruskal, minimax_query_dfs) su input di dimensione crescente misurando il tempo di esecuzione a ogni dimensione. Osservando come il tempo cresce al crescere della dimensione dell'input a seconda dell'algoritmo possiamo confermare empiricamente le complessità O(N), O(V+E), O(E log V) e O(V) discusse negli step precedenti. In questa fase viene inoltre verificata l'ipotesi fatta nello step 2 sulla lettura dei cammini, cioè che costruire il grafo a partire dal file pkl già estratto risulta effettivamente più veloce rispetto al parsing diretto del bz2, poiché evita di rifare il parsing testuale già svolto in step1. L'intera analisi sarà raccolta nel notebook step4_analisi_sperimentale.ipynb perchè è più facile visualizzare e commentare i risultati. 

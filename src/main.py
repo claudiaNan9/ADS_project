@@ -14,7 +14,7 @@ from step3_ricerca_cammini_minimax import kruskal, minimax_query_dfs
     3. Costruisce l'MST con Kruskal.
     4. Risponde a una query minimax (start, target) passata da riga di comando, oppure richiesta interattivamente se non fornita.
 
-    Uso: python src/main.py [--max_paths N] [--source bz2|pkl] [--start U --target V] """
+    Uso: python src/main.py --max_paths N --source bz2|pkl --start U --target V """
 
 
 BZ2_PATH = "/code/ADSproject/data/20110501.all-paths.bz2"
