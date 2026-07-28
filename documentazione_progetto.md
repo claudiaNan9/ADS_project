@@ -187,5 +187,23 @@ Con V = numero di nodi e E = numero di archi:
 - **Kruskal**: O(E log V) dominata dall'ordinamento degli archi; le operazioni di Union-Find costano O(α(V)) ammortizzato grazie a path compression e union by rank.
 - **Query minimax (DFS su MST)**: O(V), poiché l'MST ha esattamente V-1 archi e ogni nodo/arco viene visitato al più una volta.
 
+## Pipeline intera: punto di ingresso del programma
+
+### main.py: 
+
+Lo script main.py è il punto di ingresso del progetto: esegue gli step 1-3 in un'unica pipeline. Riusa i file pickle già presenti su disco (grafo.pkl, grafo_largest_component.pkl) quando disponibili, evitando di ricostruire il grafo se non necessario.
+
+#### Funzioni
+
+1. Costruisce il grafo AS (funzione `costruisci_grafo`), leggendo i cammini dal file bz2 o da un pkl già estratto (parametro `--source`), e ne estrae la componente connessa più grande.
+2. Costruisce l'MST del grafo tramite l'algoritmo di Kruskal (step3).
+3. Risponde a una query minimax tra due nodi `start` e `target`, forniti da riga di comando (`--start`, `--target`) oppure richiesti interattivamente se non specificati, stampando costo, cammino e pesi attraversati.
+
+#### Parametri da riga di comando
+
+- `--max_paths N`: limita il numero di cammini letti, utile per test su un sottoinsieme dei dati.
+- `--source bz2|pkl`: sorgente da cui leggere i cammini (default bz2).
+- `--start`, `--target`: nodi AS su cui eseguire la query minimax.
+
 ## Step 4: Analisi Sperimentale
-L'ultimo step è quello di verificare sperimentalmente che gli algoritmi implementati nei passi precedenti rispettino effettivamente le complessità teoriche dichiarate. L'idea è quella di eseguire ogni funzione principale (leggi_cammini, build_from_bz2, largest_connected_component, kruskal, minimax_query_dfs) su input di dimensione crescente misurando il tempo di esecuzione a ogni dimensione. Osservando come il tempo cresce al crescere della dimensione dell'input a seconda dell'algoritmo possiamo confermare empiricamente le complessità O(N), O(V+E), O(E log V) e O(V) discusse negli step precedenti. In questa fase viene inoltre verificata l'ipotesi fatta nello step 2 sulla lettura dei cammini, cioè che costruire il grafo a partire dal file pkl già estratto risulta effettivamente più veloce rispetto al parsing diretto del bz2, poiché evita di rifare il parsing testuale già svolto in step1. L'intera analisi sarà raccolta nel notebook step4_analisi_sperimentale.ipynb perchè è più facile visualizzare i risultati. 
+L'ultimo step è quello di verificare sperimentalmente che gli algoritmi implementati nei passi precedenti rispettino effettivamente le complessità teoriche dichiarate. L'idea è quella di eseguire ogni funzione principale (leggi_cammini, build_from_bz2, largest_connected_component, kruskal, minimax_query_dfs) su input di dimensione crescente misurando il tempo di esecuzione a ogni dimensione. Osservando come il tempo cresce al crescere della dimensione dell'input a seconda dell'algoritmo possiamo confermare empiricamente le complessità O(N), O(V+E), O(E log V) e O(V) discusse negli step precedenti. In questa fase viene inoltre verificata l'ipotesi fatta nello step 2 sulla lettura dei cammini, cioè che costruire il grafo a partire dal file pkl già estratto risulta effettivamente più veloce rispetto al parsing diretto del bz2, poiché evita di rifare il parsing testuale già svolto in step1. L'intera analisi sarà raccolta nel notebook step4_analisi_sperimentale.ipynb perchè è più facile visualizzare e commentare i risultati. 
