@@ -26,8 +26,8 @@ LARGEST_PATH = "/code/ADSproject/data/grafo_largest_component.pkl"
 def costruisci_grafo(max_paths=None, source="pkl"):
 
     if max_paths:
-        graph_path = "/code/ADSproject/data/grafo_test.pkl"
-        largest_path = "/code/ADSproject/data/grafo_largest_test.pkl"
+        graph_path = f"/code/ADSproject/data/grafo_test_{max_paths}.pkl"
+        largest_path = f"/code/ADSproject/data/grafo_largest_test_{max_paths}.pkl"
     else:
         graph_path = GRAPH_PATH
         largest_path = LARGEST_PATH
@@ -93,9 +93,10 @@ def main():
             print("\nQuery non fornita, termino senza rispondere alla query minimax.")
             return
 
-    if not mst.has_node(start) or not mst.has_node(target):
+    nodi_mancanti = [n for n in (start, target) if not mst.has_node(n)]
+    if nodi_mancanti:
         esempi = random.sample(mst.get_nodes(), min(5, len(mst.get_nodes())))
-        print(f"\nErrore: nodo {start if not mst.has_node(start) else target} non presente nell'MST.")
+        print(f"\nErrore: nodo/i {nodi_mancanti} non presente/i nell'MST.")
         print(f"Alcuni nodi validi di esempio: {esempi}")
         return
 

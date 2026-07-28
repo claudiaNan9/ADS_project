@@ -404,8 +404,8 @@ if __name__ == "__main__":
     largest_path = "/code/ADSproject/data/grafo_largest_component.pkl"
 
     if args.max_paths:
-        graph_path = "/code/ADSproject/data/grafo_test.pkl"
-        largest_path = "/code/ADSproject/data/grafo_largest_test.pkl"
+        graph_path = f"/code/ADSproject/data/grafo_test_{args.max_paths}.pkl"
+        largest_path = f"/code/ADSproject/data/grafo_largest_test_{args.max_paths}.pkl"
 
     if os.path.exists(largest_path):
         print("carico il grafo largest dal pickle...")

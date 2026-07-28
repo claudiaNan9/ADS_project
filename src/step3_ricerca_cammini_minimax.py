@@ -169,29 +169,8 @@ def minimax_query_dfs(mst, start, target):
 
 if __name__ == "__main__":
 
-        ### qui usiamo time ###
 
-        # # carica il grafo largest component
-        # grafo = Graph.load_graph("/code/ADSproject/data/grafo_largest_test.pkl")
-        
-        # # costruisce il MST con Kruskal
-        # inizio = time.time()
-        # mst, mst_weight = kruskal(grafo)
-        # fine = time.time()
-        # print(f"tempo Kruskal: {fine - inizio:.2f} secondi")
-        # print(f"peso totale MST: {mst_weight}")
-        # print(f"nodi MST: {len(mst.get_nodes())}")
-        # print(f"archi MST: {len(mst.get_edges())}")
-        
-        # # esempio di query minimax
-        # start = 4436
-        # target = 6939
-        # costo, cammino = minimax_query_dfs(mst, start, target)
-        # print(f"\nquery minimax da {start} a {target}:")
-        # print(f"costo: {costo}")
-        # print(f"cammino: {cammino}")
-
-        ### qui usiamo per_counter che forse è un pochino meglio nel calcolo dei tempi (dicono) ####
+        ### qui usiamo per_counter al posto di time che dicono sia meglio per il calcolo dei tempi ####
         
         # grafo di test più piccolo 
 
