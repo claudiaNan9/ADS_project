@@ -33,9 +33,9 @@ def leggi_cammini(filepath, max_righe=None): ## max_righe serve per limitare il 
                 if "/" in p or "." in p or ":" in p:  ## ignora gli elementi che sono indirizzi ip ecc
                     break
                 nodi = p.split("|")
-                cammino.extend(nodi)
+                cammino.extend(nodi) # aggiunge un nodo alla volta
             if len(cammino) > 1:
-                cammini.append(cammino)
+                cammini.append(cammino) # aggiunge il cammino come singolo elemento 
                 contatore += 1
     return cammini
 

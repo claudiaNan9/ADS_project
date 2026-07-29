@@ -22,11 +22,10 @@ Nello specifico, quelli scelti per lo svolgimento di questo progetto sono: `2011
 ## Metodologia
 
 Per affrontare il problema è stata scelta la seguente metodologia. 
-1. Per prima cosa, il file contenente i cammini BGP viene inizialmente analizzato per estrarre solamente le sequenze di nodi Autonomous System e i relativi cammini, eliminando dati superflui delle righe del dataset. I dati elaborati vengono poi salvati in formato pickle, così da evitare di rileggere ogni volta il file compresso originale. A partire dai cammini viene costruito un grafo pesato e non orientato, in cui ogni nodo rappresenta un AS e ogni arco rappresenta una relazione di adiacenza. Il peso di un arco corrisponde alla frequenza con cui l'arco compare nel dataset dei cammini BGP. Poiché il grafo può essere disconnesso, si considera soltanto la componente connessa più grande, come richiesto dal problema.
-2. Per rispondere alle query minimax viene costruito un Minimum Spanning Tree mediante l’algoritmo di Kruskal. Questa scelta deriva dalla proprietà per cui, nel cammino tra due nodi all’interno di un MST, il massimo peso attraversato è minimo rispetto a tutti i possibili cammini tra gli stessi nodi nel grafo originale. Kruskal ordina gli archi per frequenza crescente e li inserisce nell’albero solo se non generano cicli. Per controllare efficientemente la presenza di cicli viene utilizzata una struttura Union-Find con path compression e union by rank.
-Nota: il problema del cammino minimax si potrebbe risolvere anche con una variante di Dijkstra (rilassamento con max invece della somma), ma non è la scelta più conveniente quando le query sono molte: Dijkstra andrebbe rieseguito a ogni interrogazione. Costruendo invece l'MST una sola volta con Kruskal, ogni query minimax si riduce a una semplice DFS O(V) sull'albero. Poi per il minimax non vale la proprietà secondo cui ogni sottocammino di un cammino ottimo è anch'esso ottimo: un sottopercorso può usare archi non ottimali purché non superino l'arco di peso massimo del cammino. L'MST garantisce comunque il cammino minimax ottimo: Kruskal aggiunge sempre l'arco più leggero che non crea cicli, quindi il cammino unico che si forma tra due nodi nell'albero usa gli archi più leggeri possibili, minimizzando il massimo peso attraversato. I percorsi alternativi sono automaticamente esclusi perché avrebbero un massimo maggiore o uguale.
-3. Una volta costruito l'MST, ogni query tra due nodi viene risolta tramite una DFS. Poiché l'MST è un albero (grafo connesso senza cicli), tra due nodi esiste un unico 
-cammino possibile — quindi la DFS lo trova sempre in modo univoco. Ci verrà restituito un solo cammino minimax, che è uno dei cammini minimax ottimi presenti nel grafo originale (potrebbero esisterne altri con lo stesso costo - traccia 2 opzionale del progetto). Durante la visita si mantiene il massimo peso incontrato: tale valore rappresenta il costo minimax ottimo della query.
+1. Per prima cosa, il file contenente i cammini BGP viene inizialmente analizzato per estrarre solamente le sequenze di nodi Autonomous Systems (AS) e i relativi cammini, eliminando dati superflui delle righe del dataset. I dati elaborati vengono poi salvati in formato pickle, così da evitare di rileggere ogni volta il file compresso originale. A partire dai cammini viene costruito un grafo pesato e non orientato, in cui ogni nodo rappresenta un nodo AS e ogni arco rappresenta una relazione di adiacenza. Il peso di un arco corrisponde alla frequenza con cui l'arco compare nel dataset dei cammini BGP. Poiché il grafo può essere disconnesso, si deve considerare la componente connessa più grande.
+2. Per rispondere alle query di cammino minimax viene costruito un Minimum Spanning Tree (MST) mediante l’algoritmo di Kruskal. Questa scelta deriva dalla proprietà per cui, nel cammino tra due nodi all’interno di un MST, il massimo peso attraversato è minimo rispetto a tutti i possibili cammini tra gli stessi nodi nel grafo originale. Kruskal ordina gli archi per frequenza crescente e li inserisce nell’albero solo se non generano cicli. Per controllare efficientemente la presenza di cicli viene utilizzata una struttura Union-Find con path compression e union by rank.
+Nota: il problema del cammino minimax si potrebbe risolvere anche con una variante di Dijkstra (rilassamento con max invece della somma), ma non è la scelta più conveniente quando le query sono molte: Dijkstra andrebbe rieseguito ad ogni nuovo nodo sorgente (visto che calcola uno vs. tutti). Costruendo invece l'MST una sola volta con Kruskal, ogni query minimax si riduce a una semplice DFS O(V) sull'albero. L'MST garantisce comunque il cammino minimax ottimo: Kruskal aggiunge sempre l'arco più leggero che non crea cicli, quindi il cammino unico che si forma tra due nodi nell'albero minimizza il massimo peso attraversato. Nessun cammino alternativo nel grafo originale può avere un peso massimo strettamente inferiore a quello del cammino nell’MST, anche se possono esistere altri cammini con lo stesso valore minimax (ecco perché la traccia opzionale chiede di contarli).
+3. Una volta costruito l'MST, ogni query tra due nodi viene risolta tramite una DFS. Poiché l'MST è un albero (grafo connesso senza cicli), tra due nodi esiste un unico cammino possibile — quindi la DFS lo trova sempre in modo univoco. Ci verrà restituito un solo cammino minimax, che è uno dei cammini minimax ottimi presenti nel grafo originale (potrebbero esisterne altri con lo stesso costo - traccia 2 opzionale del progetto). Durante la visita si mantiene il massimo peso incontrato: tale valore rappresenta il costo minimax ottimo della query.
 4. In ultimo viene effettuata un'analisi sperimentale, raccogliendo statistiche sul dataset e e verificando sperimentalmente le complessità attese degli algoritmi.
 
 
@@ -35,7 +34,7 @@ cammino possibile — quindi la DFS lo trova sempre in modo univoco. Ci verrà r
 Il progetto è organizzato nei seguenti script che svolgono task specifici per ogni fase del progetto. Verranno descritti nel dettaglio nelle sezioni successive.
 
 ```
-progetto-asd/
+ADS_PROJECT/
 ├── data/           # file .bz2 scaricati (non inclusi nel repository perchè troppo pesanti)
 ├── src/
 │   ├── step1_parser_cammini.py   # caricamento e parsing dei dataset
@@ -43,7 +42,7 @@ progetto-asd/
 │   ├── step3_ricerca_cammini_minimax.py      # algoritmo di Kruskal + Union-Find + DFS per query
 │   └── step4_analisi_sperimentale.ipynb  # analisi sperimentale
 |── notebooks/       # jupyter notebook di prova per capire/visualizzare alcuni passaggi 
-├── main.py         # punto di ingresso del programma
+├── main.py         # punto di ingresso del programma che esegue gli step in un'unica pipeline
 └── documentazione_progetto.md       # documento di progettazione delle varie fasi e delle scelte di implementazione
 ```
 
@@ -95,10 +94,10 @@ Nel notebook, le frequenze sono state estrapolate e salvate come frequenze = def
 
 ### step2_costruzione_grafo.py
 
-Lo script step2_costruzione_grafo.py implementa una classe Graph che permette di inizializzare un oggetto grafo non orientato e pesato, che implementa funzionalità di gestione generale e di costruzione attraverso la lettura di cammini BGP. Di seguito le specifiche.
+Lo script step2_costruzione_grafo.py implementa una classe Graph che permette di inizializzare un oggetto grafo non orientato e pesato, implementa funzionalità di gestione generale e di costruzione attraverso la lettura di cammini BGP. Di seguito le specifiche.
 
 #### Input
-L'input per la costruzione del grafo è la sequenza di cammini BGP. Lo script é configurato in modo tale da permettere due modalità: la lettura dal file cammini.pkl, creato nello step precedente, o direttamente dal file bz2. Teoricamente, i file pkl dovrebbe risultare più veloce perché il parsing del testo è già stato effettuato nello step1 e il file serializzato può essere deserializzato direttamente senza ulteriori elaborazioni. L'analisi sperimentale provvederà ad effettuare test di confronto tra le due modalità.
+L'input per la costruzione del grafo è la sequenza di cammini BGP. Lo script é configurato in modo tale da permettere due modalità: la lettura dal file cammini.pkl, creato nello step precedente, o direttamente dal file bz2. Teoricamente, leggere il file pkl dovrebbe risultare più veloce perché il parsing del testo è già stato effettuato nello step1 e il file serializzato può essere deserializzato direttamente senza ulteriori elaborazioni. L'analisi sperimentale provvederà ad effettuare test di confronto tra le due modalità.
 
 #### Output
 Lo script restituisce due file: 
@@ -110,7 +109,7 @@ Il grafo viene rappresentato come un dizionario di dizionari (dict) dove la chia
 
 #### Inizializzazione e rappresentazione del grafo
 
-- **`__init__(directed=False)`**: inizializza un grafo vuoto tramite un dizionario di adiacenza. Il grafo è non orientato di default.
+- **`__init__(directed=False)`**: inizializza un grafo vuoto tramite la sua lista adiacenza che è un dizionario. Il grafo è non orientato di default.
 - **`__repr__()`**: restituisce una rappresentazione testuale leggibile del grafo, mostrando per ogni nodo i vicini e i relativi pesi.
 
 #### Funzioni generali sul grafo
@@ -118,9 +117,9 @@ Il grafo viene rappresentato come un dizionario di dizionari (dict) dove la chia
 - **`_convert_node(node)`**: converte l’identificatore AS da stringa a intero. 
 - **`add_node(node)`**: aggiunge un nodo con lista di adiacenza vuota. 
 - **`remove_node(node)`**: rimuove il nodo e tutti i suoi archi dai vicini.
-- **`add_edge(from_node, to_node, weight=None)`**: aggiunge un arco non orientato arbitrario con peso opzionale specificato dall'utente. I self-loop vengono ignorati. 
-- **`remove_edge(from_node, to_node)`**: rimuove un arco in entrambe le direzioni.
-- **`update_frequency(from_node, to_node)`**: legge la frequenza attuale e la inizializza a zero se non esiste, incrementa il peso dell'arco di 1 in entrambe le direzioni. Gestisce i self-loop.
+- **`add_edge(from_node, to_node, weight=None)`**: aggiunge un arco non orientato arbitrario con peso opzionale specificato dall'utente. Gestisce i self-loop. Solleva un errore se l'arco esiste già.
+- **`remove_edge(from_node, to_node)`**: rimuove un arco (se l'arco è non orientato rimuove anche l'arco inverso).
+- **`update_frequency(from_node, to_node)`**: legge la frequenza attuale e la inizializza a zero se non esiste, incrementa il peso dell'arco di 1 in entrambe le direzioni nel caso di grafo non orientato. Gestisce i self-loop.
 - **`get_neighbors(node)`**: restituisce il dizionario dei vicini di un nodo con i relativi pesi. 
 - **`has_node(node)`**: verifica se un nodo esiste. 
 - **`has_edge(from_node, to_node)`**: verifica se un arco esiste. 

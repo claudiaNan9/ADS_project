@@ -15,7 +15,7 @@ class Graph:
 
 ## Converte l'identificatore del nodo AS che è una stringa in un intero.
 
-    # la barretta davanti indica un metodo interno della classe
+    # la barretta davanti indica un metodo interno della classe (python non ne impedisce comunque l'utilizzo esternamente)
     def _convert_node(self, node):
 
         try:
@@ -24,7 +24,7 @@ class Graph:
             raise ValueError(f"Node {node} is not a valid integer identifier.")
         
 
-## Definisce come stampare il grafo in modo leggibile
+## Definisce come stampare il grafo in modo leggibile (una riga per ogni nodo)
 
     def __repr__(self):
         lines = [
@@ -56,19 +56,20 @@ class Graph:
         for neighbors in self.adjacency_list.values(): ## rimuove il nodo da tutte le liste di adiacenza dei vicini
             neighbors.pop(node, None)
 
-        del self.adjacency_list[node]
+        del self.adjacency_list[node] # elimina il nodo stesso 
 
 
 
-## Aggiunge un arco al grafo. Questo arco può essere arbitrario e non proveniente dai cammini BGP (il suo peso sarà None o specificato arbitrariamente dall'utente)
+## Aggiunge un arco arbitrario al grafo, quindi non proveniente dai cammini BGP (il suo peso sarà None o specificato arbitrariamente dall'utente). 
+# Solleva un errore se esiste già (questo impedisce anche si possano cambiare arbitrariamente i pesi inseriti con BGP, se poi si vuole cambiarli si può fare un metodo dedicato ma ora non ci serve)
 
     def add_edge(self, from_node, to_node, weight=None):
         
         from_node = self._convert_node(from_node) 
         to_node = self._convert_node(to_node)
 
-        if from_node == to_node:  # elimina i self-loop
-            return
+        if from_node == to_node:  # ignora i self-loop
+            return # interrompe il metodo 
 
         if from_node not in self.adjacency_list:
             self.add_node(from_node)
@@ -76,6 +77,8 @@ class Graph:
         if to_node not in self.adjacency_list:
             self.add_node(to_node)
 
+        if to_node in self.adjacency_list[from_node]:  # controlla che l'arco non esista già
+            raise ValueError(f"Edge ({from_node}, {to_node}) already exists in the graph.")
       
         self.adjacency_list[from_node][to_node] = weight
 
@@ -114,14 +117,14 @@ class Graph:
 
 
 
-## Aggiorna la frequenza degli archi
+## Aggiorna la frequenza degli archi che inseriamo quando li leggiamo dai cammini BGP
 
     def update_frequency(self, from_node, to_node):
 
         from_node = self._convert_node(from_node)
         to_node = self._convert_node(to_node)
 
-        if from_node == to_node:  # elimina i self-loop
+        if from_node == to_node:  # ignora i self-loop
             return
         
         ## ho il dubbio che non sia giusto crearli, vediamo
@@ -141,8 +144,7 @@ class Graph:
             raise ValueError(f"Node {to_node} does not exist in the graph.")
     
         #legge la frequenza attuale con .get(...); se l’arco ancora non esiste restituisce 0 come frequenza iniziale e poi aggiunge 1 
-        # assegna il nuovo valore a self.adjacency_list[from_node][to_node].
-
+        # assegna il nuovo valore a self.adjacency_list[from_node][to_node] e all'arco inverso nel caso di grafo non orientato
         self.adjacency_list[from_node][to_node] = (                      
             self.adjacency_list[from_node].get(to_node, 0) + 1
         )
@@ -155,8 +157,8 @@ class Graph:
 
 ## Restituisce i vicini 
 
-    
     def get_neighbors(self, node):
+
         node = self._convert_node(node)
 
         if node in self.adjacency_list:
@@ -174,6 +176,7 @@ class Graph:
 ## Controlla se un arco esiste 
 
     def has_edge(self, from_node, to_node):
+
         from_node = self._convert_node(from_node)
         to_node = self._convert_node(to_node)
 
@@ -187,7 +190,7 @@ class Graph:
     def get_nodes(self):
         return list(self.adjacency_list.keys())
 
-## Restituisce gli archi nella forma [(from_node,to_node,frequenza)]. 
+## Restituisce gli archi nella forma di lista di tuple [(from_node,to_node,frequenza)]. 
 
     def get_edges(self):
         edges = []
