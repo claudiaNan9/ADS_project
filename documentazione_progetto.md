@@ -129,22 +129,21 @@ Il grafo viene rappresentato come un dizionario di dizionari (dict) dove la chia
 
 #### Funzioni dedicate alla costruzione del grafo dai cammini BGP:
 
-- **`add_bgp_path(path)`**: converte gli AS in interi, elimina i duplicati consecutivi, poi per ogni coppia consecutiva chiama `update_frequency`. Costruisce il grafo dinamicamente. 
-- **`build_from_paths(paths)`**: itera su una lista di cammini (già caricati in memoria o letti dal file bz2) e chiama `add_bgp_path` per ognuno. 
-- **`build_from_bz2(filepath, max_paths=None)`**: legge il file bz2 riga per riga, fa il parsing e chiama `add_bgp_path` direttamente senza caricare tutto in memoria. 
+- **`add_bgp_path(path)`**: converte gli AS in interi, elimina gli eventuali duplicati consecutivi, poi per ogni coppia chiama `update_frequency`. Costruisce il grafo dinamicamente. 
 - **`load_paths(filepath_bz2, filepath_pkl, max_paths)`**: metodo statico che carica i cammini dal bz2 (con limite opzionale) o dal pkl.
+- **`build_from_bz2(filepath, max_paths=None)`**: legge il file bz2 riga per riga, fa il parsing e chiama `add_bgp_path` direttamente senza caricare tutto in memoria. 
+- **`build_from_paths(paths)`**: itera su una lista di cammini (già caricati in memoria o letti dal file bz2) e chiama `add_bgp_path` per ognuno. 
 - **`save_graph(filepath)`**: serializza il grafo in un file pickle. 
 - **`load_graph(filepath)`**: metodo statico che deserializza il grafo da un file pickle.
 
 #### Funzioni per la componente connessa
 
 - **`largest_connected_component()`**: trova i nodi che appartengono alla componente connessa più grande tramite DFS iterativa.
-- **`get_largest_connected_subgraph()`**: restituisce un nuovo oggetto `Graph` contenente solo i nodi e gli archi della componente connessa più grande. Il grafo originale non viene modificato.
+- **`get_largest_connected_subgraph()`**: restituisce un nuovo oggetto `Graph` contenente i nodi, gli archi e i pesi della componente connessa più grande. Il grafo originale non viene modificato.
 
 #### Complessità dei metodi principali
 
-`add_node` ha complessità O(1) perché aggiunge semplicemente una chiave al dizionario. `remove_node` ha complessità O(V) perché deve scorrere tutti i nodi del grafo per rimuovere il nodo eliminato dalle loro liste di adiacenza — nel caso peggiore tocca tutti i V nodi. `add_edge` e `update_frequency` hanno complessità O(1) perché si limitano ad accedere e modificare voci in due dizionari (operazioni a tempo costante). `add_bgp_path` ha complessità O(k) dove k è la lunghezza del cammino — scorre le coppie consecutive e chiama `update_frequency` per ognuna.
-Il totale è quindi proporzionale alla lunghezza del cammino. `build_from_paths` e `build_from_bz2` hanno complessità O(N) dove N è la lunghezza totale di tutti i cammini — chiamano `add_bgp_path` su ogni cammino, e la somma delle lunghezze è N. `largest_connected_component` ha complessità O(V+E) perché implementa una DFS che visita ogni nodo una volta sola O(V) e percorre ogni arco una volta sola O(E).
+`add_node` ha complessità O(1) perché aggiunge semplicemente una chiave al dizionario. `remove_node` ha complessità O(V) perché deve scorrere tutti i nodi del grafo per rimuovere il nodo eliminato dalle loro liste di adiacenza — nel caso peggiore tocca tutti i V nodi. `add_edge` e `update_frequency` hanno complessità O(1) perché si limitano ad accedere e modificare voci in due dizionari (operazioni a tempo costante). `add_bgp_path` ha complessità O(k) dove k è la lunghezza del cammino — scorre le coppie consecutive e chiama `update_frequency` per ognuna. Il totale è quindi proporzionale alla lunghezza del cammino. `build_from_paths` e `build_from_bz2` hanno complessità O(N) dove N è la lunghezza totale di tutti i cammini — chiamano `add_bgp_path` su ogni cammino, e la somma delle lunghezze è N. `largest_connected_component` ha complessità O(V+E) perché implementa una DFS che visita ogni nodo una volta sola O(V) e percorre ogni arco una volta sola O(E).
 
 ## Step 3: Ricerca cammino minimax ottimo
 
@@ -161,7 +160,7 @@ Lo script step3_ricerca_cammini_minimax.py costruisce il Minimum Spanning Tree (
 - Per le query: due nodi `start` e `target` appartenenti all'MST.
 
 #### Output
-- `mst`: un oggetto `Graph` non orientato che rappresenta l'albero di copertura minimo.
+- `mst`: un oggetto della classe `Graph` non orientato e pesato che rappresenta l'albero di copertura minimo.
 - `mst_weight`: il peso totale (somma dei pesi degli archi selezionati).
 - Per ogni query minimax: `(costo, cammino, pesi)`, dove `costo` è il peso massimo lungo il cammino ottimale nell'MST, `cammino` è la lista dei nodi attraversati e `pesi` è la lista dei pesi degli archi percorsi.
 
@@ -171,7 +170,7 @@ Lo script step3_ricerca_cammini_minimax.py costruisce il Minimum Spanning Tree (
   - **path compression**: quando si cerca la radice di un nodo, tutti i nodi incontrati lungo il percorso vengono collegati direttamente alla radice, rendendo le ricerche future più veloci.
   - **union by rank**: quando si uniscono due insiemi, l'albero più basso viene attaccato a quello più alto (col rank più alto), evitando di creare alberi sbilanciati.
 - **`node_to_index`**: dizionario che mappa gli identificatori dei nodi (es. AS) a indici consecutivi `0..n-1`, così da poter usare le liste di Union-Find.
-- **`Graph` (adjacency list)**: struttura del grafo/MST come dizionario `{nodo: {vicino: peso}}`.
+- **`Graph` (adjacency list)**: struttura del grafo/MST come dizionario di dizionari `{nodo: {vicino: peso}}`.
 - **Stack (lista)**: usato dalla DFS iterativa; ogni elemento è la tupla tripla`(nodo, max_peso_corrente, cammino)`.
 
 #### Funzioni

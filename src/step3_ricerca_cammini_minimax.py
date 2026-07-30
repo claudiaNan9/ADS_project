@@ -29,11 +29,12 @@ from time import perf_counter
 
 class UnionFind:
     def __init__(self, n):
-        self.parent = [i for i in range(n)]
+        #inizializza una lista di n elementi (dove n è il numero di nodi) per tenere traccia del parent di quel nodo (all'inizio ogni nodo è parent di se stesso)
+        self.parent = [i for i in range(n)] 
         self.rank = [0] * n # inizializza a 0 il rank (altezza) di ogni nodo
 
     def find(self, x):
-        if self.parent[x] != x:  # se x non è la root
+        if self.parent[x] != x:  # se x non è la root (non è parent di sè stesso)
             # Path compression: risale ricorsivamente fino alla root e tornando indietro collega direttamente tutti i nodi incontrati lungo il percorso
             self.parent[x] = self.find(self.parent[x])
 
@@ -56,7 +57,6 @@ class UnionFind:
         return False # erano nello stesso set
 
 
-## kruskal adattato al nostro grafo
 def kruskal(graph):
     if graph.directed: # kruskal va bene solo per un grafo non orientato, quindi mettiamo un check sulla tipologia
         raise ValueError(
@@ -67,7 +67,7 @@ def kruskal(graph):
     n = len(nodes)
 
     if n == 0:
-        return Graph(directed=False), 0
+        return Graph(directed=False), 0 # il grafo è vuoto e ha 0 come peso totale
 
     # Gli identificatori AS non sono 0, 1, 2, quindi li associamo a indici consecutivi così UnionFind può usare liste
     node_to_index = {
@@ -90,8 +90,8 @@ def kruskal(graph):
     union_find = UnionFind(n)  # chiamo union find sui nodi 
     # crea l'mst come oggetto Graph
     mst = Graph(directed=False)
-    #for node in nodes:
-    #    mst.add_node(node)
+    for node in nodes:
+       mst.add_node(node)
 
     mst_weight = 0 # costo totale MST
     selected_edges = 0 # numero di archi selezionati
@@ -102,7 +102,7 @@ def kruskal(graph):
 
         if union_find.union(index_u, index_v):  # se l'arco non crea un ciclo viene aggiunto, altrimenti no
             # Salva l'arco in entrambe le direzioni nell'oggetto Graph
-            mst.add_edge(u,v,weight) # questo metodo della classe Graph lo aggiunge già in entrambe le direzioni
+            mst.add_edge(u,v,weight) # questo metodo della classe Graph lo aggiunge in entrambe le direzioni
             #mst.adjacency_list[u][v] = weight
             #mst.adjacency_list[v][u] = weight
 
@@ -123,6 +123,7 @@ def kruskal(graph):
 ## dfs per rispondere alle query
 
 def minimax_query_dfs(mst, start, target):
+
     if start not in mst.adjacency_list:
         raise ValueError(f"Il nodo {start} non esiste nell'MST.")
 
@@ -141,14 +142,15 @@ def minimax_query_dfs(mst, start, target):
         node, current_max, path = stack.pop() # tira fuori l'ultimo elemento (lifo)
 
         if node == target:
+            # trovato il target, ricostruisce i pesi del percorso
             weights = []
 
-            for u, v in zip(path, path[1:]):
+            for u, v in zip(path, path[1:]): # accoppia nodi consecutivi nella lista del percorso e ne estrae il peso corrispondente
                 weights.append(mst.adjacency_list[u][v])
 
             return current_max, path, weights
 
-        # mst.adjacency_list[node] è un dizionario {vicino: peso} quindi nella visita segue l'ordine in cui gli elementi compaiono nel dizionario
+        # mst.adjacency_list[node] è un dizionario {vicino: peso} quindi la visita segue l'ordine in cui gli elementi compaiono nel dizionario
         for neighbor, weight in mst.adjacency_list[node].items(): 
             if neighbor not in visited:
                 visited.add(neighbor)
@@ -165,6 +167,7 @@ def minimax_query_dfs(mst, start, target):
     raise ValueError(
         f"Non esiste un cammino tra {start} e {target}."
     )
+
 
 
 if __name__ == "__main__":
@@ -189,6 +192,9 @@ if __name__ == "__main__":
         print(f"Peso totale MST: {mst_weight}")
         print(f"Nodi MST: {len(mst.get_nodes())}")
         print(f"Archi MST: {len(mst.get_edges())}")
+
+
+        # due nodi di esempio 
 
         start = 702
         target = 4436

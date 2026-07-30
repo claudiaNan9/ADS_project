@@ -33,11 +33,11 @@ def costruisci_grafo(max_paths=None, source="pkl"):
         largest_path = LARGEST_PATH
 
     if os.path.exists(largest_path):
-        print("carico il grafo largest dal pickle...")
+        print("carico il grafo largest dal file pickle...")
         return Graph.load_graph(largest_path)
 
     if os.path.exists(graph_path):
-        print("carico il grafo dal pickle...")
+        print("carico il grafo dal file pickle...")
         grafo = Graph.load_graph(graph_path)
     else:
         grafo = Graph(directed=False)
